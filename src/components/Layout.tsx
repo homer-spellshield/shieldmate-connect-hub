@@ -3,15 +3,23 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { FloatingChatLauncher } from "@/components/FloatingChatLauncher";
 import { Button } from "@/components/ui/button";
-import { Moon, Sun } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Moon, Sun, LogOut, User } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 
 interface LayoutProps {
   children: ReactNode;
 }
 
 export const Layout = ({ children }: LayoutProps) => {
+  const { profile, signOut } = useAuth();
+  
   const toggleDarkMode = () => {
     document.documentElement.classList.toggle('dark');
+  };
+
+  const handleSignOut = async () => {
+    await signOut();
   };
 
   return (
@@ -45,11 +53,33 @@ export const Layout = ({ children }: LayoutProps) => {
                     <span className="sr-only">Toggle theme</span>
                   </Button>
                   
-                  <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
-                    <span className="text-primary-foreground text-sm font-medium">
-                      JS
-                    </span>
-                  </div>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="sm" className="flex items-center space-x-2">
+                        <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
+                          <span className="text-primary-foreground text-sm font-medium">
+                            {profile?.first_name?.[0]}{profile?.last_name?.[0]}
+                          </span>
+                        </div>
+                        <span className="hidden md:block text-sm font-medium">
+                          {profile?.first_name} {profile?.last_name}
+                        </span>
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-56">
+                      <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem>
+                        <User className="mr-2 h-4 w-4" />
+                        Profile
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={handleSignOut}>
+                        <LogOut className="mr-2 h-4 w-4" />
+                        Sign out
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
               </div>
             </header>

@@ -24,10 +24,9 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/hooks/useAuth";
 
-// Mock user role - in real app this would come from auth context
-const mockUserRole = "volunteer"; // "volunteer" | "organisation" | "admin"
-
+// Remove the mock user role comment
 const volunteerMenuItems = [
   { title: "Dashboard", url: "/", icon: Target },
   { title: "Discover Missions", url: "/missions", icon: Search },
@@ -50,9 +49,13 @@ const commonMenuItems = [
 export function AppSidebar() {
   const { state } = useSidebar();
   const location = useLocation();
+  const { userRoles, profile } = useAuth();
   const collapsed = state === "collapsed";
 
-  const menuItems = mockUserRole === "volunteer" ? volunteerMenuItems : organisationMenuItems;
+  const isVolunteer = userRoles.includes('volunteer');
+  const isOrganizationUser = userRoles.includes('organization_owner') || userRoles.includes('team_member');
+
+  const menuItems = isVolunteer ? volunteerMenuItems : organisationMenuItems;
   
   const isActive = (path: string) => location.pathname === path;
   const getNavClass = (isActive: boolean) => 
@@ -69,7 +72,7 @@ export function AppSidebar() {
             <div>
               <h1 className="text-lg font-bold text-foreground">ShieldMate</h1>
               <p className="text-xs text-muted-foreground">
-                {mockUserRole === "volunteer" ? "Volunteer Portal" : "Organization Portal"}
+                {isVolunteer ? "Volunteer Portal" : "Organization Portal"}
               </p>
             </div>
           )}
@@ -101,7 +104,7 @@ export function AppSidebar() {
         </SidebarGroup>
 
         {/* Gamification Section for Volunteers */}
-        {mockUserRole === "volunteer" && !collapsed && (
+        {isVolunteer && !collapsed && (
           <SidebarGroup>
             <SidebarGroupLabel>Your Progress</SidebarGroupLabel>
             <SidebarGroupContent>
@@ -112,16 +115,16 @@ export function AppSidebar() {
                 </div>
                 <div>
                   <div className="flex justify-between text-xs text-muted-foreground mb-1">
-                    <span>Level 3</span>
-                    <span>1,450 / 2,000 XP</span>
+                    <span>Level {profile?.level || 1}</span>
+                    <span>{profile?.xp_points || 0} / 2,000 XP</span>
                   </div>
                   <div className="progress-bar">
-                    <div className="progress-fill" style={{ width: '72.5%' }} />
+                    <div className="progress-fill" style={{ width: `${((profile?.xp_points || 0) / 2000) * 100}%` }} />
                   </div>
                 </div>
                 <div className="flex justify-center">
                   <Badge variant="secondary" className="text-xs">
-                    🏆 5 Missions Completed
+                    🏆 0 Missions Completed
                   </Badge>
                 </div>
               </div>
