@@ -24,7 +24,6 @@ const signUpSchema = z.object({
   password: z.string().min(6, 'Password must be at least 6 characters'),
   firstName: z.string().min(1, 'First name is required'),
   lastName: z.string().min(1, 'Last name is required'),
-  userType: z.enum(['organization', 'volunteer']).default('volunteer'),
 });
 
 type SignInForm = z.infer<typeof signInSchema>;
@@ -56,7 +55,6 @@ const Auth = () => {
       password: '',
       firstName: '',
       lastName: '',
-      userType: 'volunteer',
     },
   });
 
@@ -68,7 +66,7 @@ const Auth = () => {
   };
 
   const handleSignUp = async (data: SignUpForm) => {
-    const { error } = await signUp(data.email, data.password, data.firstName, data.lastName, data.userType);
+    const { error } = await signUp(data.email, data.password, data.firstName, data.lastName);
     if (!error) {
       setActiveTab('signin');
     }
@@ -91,7 +89,7 @@ const Auth = () => {
           <CardHeader>
             <CardTitle>Welcome to ShieldMate</CardTitle>
             <CardDescription>
-              Sign in to your account or create a new one
+              Create an organization account or sign in to an existing one
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -167,28 +165,7 @@ const Auth = () => {
                           </FormItem>
                         )}
                       />
-                    </div>
-                     <FormField
-                       control={signUpForm.control}
-                       name="userType"
-                       render={({ field }) => (
-                         <FormItem>
-                           <FormLabel>I am registering as</FormLabel>
-                           <Select onValueChange={field.onChange} defaultValue={field.value}>
-                             <FormControl>
-                               <SelectTrigger>
-                                 <SelectValue placeholder="Select user type" />
-                               </SelectTrigger>
-                             </FormControl>
-                             <SelectContent>
-                               <SelectItem value="volunteer">Volunteer (Individual)</SelectItem>
-                               <SelectItem value="organization">Organization</SelectItem>
-                             </SelectContent>
-                           </Select>
-                           <FormMessage />
-                         </FormItem>
-                       )}
-                     />
+                     </div>
                      <FormField
                        control={signUpForm.control}
                        name="email"
@@ -196,7 +173,7 @@ const Auth = () => {
                          <FormItem>
                            <FormLabel>Email</FormLabel>
                            <FormControl>
-                             <Input type="email" placeholder="john@example.com" {...field} />
+                             <Input type="email" placeholder="organization@example.com" {...field} />
                            </FormControl>
                            <FormMessage />
                          </FormItem>

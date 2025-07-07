@@ -96,44 +96,30 @@ export const VolunteerManagement = () => {
 
   const handleCreateVolunteer = async (data: VolunteerForm) => {
     try {
-      // Create auth user
-      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-        email: data.email,
-        password: data.password,
-        user_metadata: {
-          first_name: data.firstName,
-          last_name: data.lastName
+      // Call the admin edge function to create user
+      const { data: result, error } = await supabase.functions.invoke('admin-create-user', {
+        body: {
+          email: data.email,
+          password: data.password,
+          firstName: data.firstName,
+          lastName: data.lastName,
+          role: 'volunteer',
+          bio: data.bio
         }
       });
 
-      if (authError) {
-        throw authError;
+      if (error) {
+        throw error;
       }
 
-      if (authData.user) {
-        // Update profile with bio
-        await supabase
-          .from('profiles')
-          .update({ bio: data.bio })
-          .eq('user_id', authData.user.id);
+      toast({
+        title: 'Success',
+        description: 'Volunteer created successfully'
+      });
 
-        // Assign volunteer role
-        await supabase
-          .from('user_roles')
-          .insert({
-            user_id: authData.user.id,
-            role: 'volunteer'
-          });
-
-        toast({
-          title: 'Success',
-          description: 'Volunteer created successfully'
-        });
-
-        setIsDialogOpen(false);
-        form.reset();
-        fetchVolunteers();
-      }
+      setIsDialogOpen(false);
+      form.reset();
+      fetchVolunteers();
     } catch (error: any) {
       console.error('Error creating volunteer:', error);
       toast({
