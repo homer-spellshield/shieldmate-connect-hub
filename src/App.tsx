@@ -10,6 +10,7 @@ import Index from "./pages/Index";
 import MissionDiscovery from "./pages/MissionDiscovery";
 import OrganisationDashboard from "./pages/OrganisationDashboard";
 import VolunteerProfile from "./pages/VolunteerProfile";
+import AdminDashboard from "./pages/AdminDashboard";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
@@ -51,6 +52,11 @@ const App = () => {
                     <Route path="/profile" element={
                       <ProtectedRoute>
                         <VolunteerProfile />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/admin" element={
+                      <ProtectedRoute requiredRoles={['super_admin']}>
+                        <AdminDashboard />
                       </ProtectedRoute>
                     } />
                     {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

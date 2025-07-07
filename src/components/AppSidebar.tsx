@@ -26,7 +26,13 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
 
-// Remove the mock user role comment
+const adminMenuItems = [
+  { title: "Admin Dashboard", url: "/admin", icon: Settings },
+  { title: "Manage Volunteers", url: "/admin", icon: Users },
+  { title: "Manage Skills", url: "/admin", icon: Award },
+  { title: "System Overview", url: "/admin", icon: Target },
+];
+
 const volunteerMenuItems = [
   { title: "Dashboard", url: "/", icon: Target },
   { title: "Discover Missions", url: "/missions", icon: Search },
@@ -54,8 +60,17 @@ export function AppSidebar() {
 
   const isVolunteer = userRoles.includes('volunteer');
   const isOrganizationUser = userRoles.includes('organization_owner') || userRoles.includes('team_member');
+  const isSuperAdmin = userRoles.includes('super_admin');
 
-  const menuItems = isVolunteer ? volunteerMenuItems : organisationMenuItems;
+  // Determine which menu items to show based on user role
+  let menuItems;
+  if (isSuperAdmin) {
+    menuItems = adminMenuItems;
+  } else if (isVolunteer) {
+    menuItems = volunteerMenuItems;
+  } else {
+    menuItems = organisationMenuItems;
+  }
   
   const isActive = (path: string) => location.pathname === path;
   const getNavClass = (isActive: boolean) => 
@@ -72,7 +87,7 @@ export function AppSidebar() {
             <div>
               <h1 className="text-lg font-bold text-foreground">ShieldMate</h1>
               <p className="text-xs text-muted-foreground">
-                {isVolunteer ? "Volunteer Portal" : "Organization Portal"}
+                {isSuperAdmin ? "Admin Portal" : isVolunteer ? "Volunteer Portal" : "Organization Portal"}
               </p>
             </div>
           )}

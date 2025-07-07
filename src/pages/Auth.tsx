@@ -80,22 +80,22 @@ const Auth = () => {
           </div>
           <h1 className="text-3xl font-bold tracking-tight">ShieldMate</h1>
           <p className="text-muted-foreground">
-            Connecting tech volunteers with organizations
+            Organization Portal - Register your organization to connect with tech volunteers
           </p>
         </div>
 
         <Card>
           <CardHeader>
-            <CardTitle>Welcome</CardTitle>
+            <CardTitle>Organization Access</CardTitle>
             <CardDescription>
-              Sign in to your account or create a new one to get started
+              Sign in to your organization account or register your organization
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Tabs value={activeTab} onValueChange={setActiveTab}>
               <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="signin">Sign In</TabsTrigger>
-                <TabsTrigger value="signup">Sign Up</TabsTrigger>
+                <TabsTrigger value="signin">Organization Sign In</TabsTrigger>
+                <TabsTrigger value="signup">Register Organization</TabsTrigger>
               </TabsList>
 
               <TabsContent value="signin" className="space-y-4">
