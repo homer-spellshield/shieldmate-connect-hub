@@ -106,37 +106,58 @@ export type Database = {
       }
       profiles: {
         Row: {
+          availability: Database["public"]["Enums"]["availability_type"] | null
           avatar_url: string | null
           bio: string | null
           created_at: string
+          experience_level:
+            | Database["public"]["Enums"]["experience_level"]
+            | null
           first_name: string | null
           id: string
+          join_date: string | null
           last_name: string | null
           level: number | null
+          status: Database["public"]["Enums"]["volunteer_status"] | null
+          time_zone: string | null
           updated_at: string
           user_id: string
           xp_points: number | null
         }
         Insert: {
+          availability?: Database["public"]["Enums"]["availability_type"] | null
           avatar_url?: string | null
           bio?: string | null
           created_at?: string
+          experience_level?:
+            | Database["public"]["Enums"]["experience_level"]
+            | null
           first_name?: string | null
           id?: string
+          join_date?: string | null
           last_name?: string | null
           level?: number | null
+          status?: Database["public"]["Enums"]["volunteer_status"] | null
+          time_zone?: string | null
           updated_at?: string
           user_id: string
           xp_points?: number | null
         }
         Update: {
+          availability?: Database["public"]["Enums"]["availability_type"] | null
           avatar_url?: string | null
           bio?: string | null
           created_at?: string
+          experience_level?:
+            | Database["public"]["Enums"]["experience_level"]
+            | null
           first_name?: string | null
           id?: string
+          join_date?: string | null
           last_name?: string | null
           level?: number | null
+          status?: Database["public"]["Enums"]["volunteer_status"] | null
+          time_zone?: string | null
           updated_at?: string
           user_id?: string
           xp_points?: number | null
@@ -207,6 +228,9 @@ export type Database = {
         | "organization_owner"
         | "team_member"
         | "volunteer"
+      availability_type: "full_time" | "part_time" | "weekends" | "flexible"
+      experience_level: "beginner" | "intermediate" | "advanced" | "expert"
+      volunteer_status: "active" | "inactive" | "on_break"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -328,6 +352,9 @@ export const Constants = {
         "team_member",
         "volunteer",
       ],
+      availability_type: ["full_time", "part_time", "weekends", "flexible"],
+      experience_level: ["beginner", "intermediate", "advanced", "expert"],
+      volunteer_status: ["active", "inactive", "on_break"],
     },
   },
 } as const
