@@ -10,6 +10,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Shield } from 'lucide-react';
 import { useEffect } from 'react';
 
@@ -23,6 +24,7 @@ const signUpSchema = z.object({
   password: z.string().min(6, 'Password must be at least 6 characters'),
   firstName: z.string().min(1, 'First name is required'),
   lastName: z.string().min(1, 'Last name is required'),
+  userType: z.enum(['organization', 'volunteer']).default('volunteer'),
 });
 
 type SignInForm = z.infer<typeof signInSchema>;
@@ -54,6 +56,7 @@ const Auth = () => {
       password: '',
       firstName: '',
       lastName: '',
+      userType: 'volunteer',
     },
   });
 
@@ -65,7 +68,7 @@ const Auth = () => {
   };
 
   const handleSignUp = async (data: SignUpForm) => {
-    const { error } = await signUp(data.email, data.password, data.firstName, data.lastName);
+    const { error } = await signUp(data.email, data.password, data.firstName, data.lastName, data.userType);
     if (!error) {
       setActiveTab('signin');
     }
@@ -80,22 +83,22 @@ const Auth = () => {
           </div>
           <h1 className="text-3xl font-bold tracking-tight">ShieldMate</h1>
           <p className="text-muted-foreground">
-            Organization Portal - Register your organization to connect with tech volunteers
+            Connect organizations with tech volunteers to strengthen cybersecurity
           </p>
         </div>
 
         <Card>
           <CardHeader>
-            <CardTitle>Organization Access</CardTitle>
+            <CardTitle>Welcome to ShieldMate</CardTitle>
             <CardDescription>
-              Sign in to your organization account or register your organization
+              Sign in to your account or create a new one
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Tabs value={activeTab} onValueChange={setActiveTab}>
               <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="signin">Organization Sign In</TabsTrigger>
-                <TabsTrigger value="signup">Register Organization</TabsTrigger>
+                <TabsTrigger value="signin">Sign In</TabsTrigger>
+                <TabsTrigger value="signup">Sign Up</TabsTrigger>
               </TabsList>
 
               <TabsContent value="signin" className="space-y-4">
@@ -165,19 +168,40 @@ const Auth = () => {
                         )}
                       />
                     </div>
-                    <FormField
-                      control={signUpForm.control}
-                      name="email"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Email</FormLabel>
-                          <FormControl>
-                            <Input type="email" placeholder="john@example.com" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                     <FormField
+                       control={signUpForm.control}
+                       name="userType"
+                       render={({ field }) => (
+                         <FormItem>
+                           <FormLabel>I am registering as</FormLabel>
+                           <Select onValueChange={field.onChange} defaultValue={field.value}>
+                             <FormControl>
+                               <SelectTrigger>
+                                 <SelectValue placeholder="Select user type" />
+                               </SelectTrigger>
+                             </FormControl>
+                             <SelectContent>
+                               <SelectItem value="volunteer">Volunteer (Individual)</SelectItem>
+                               <SelectItem value="organization">Organization</SelectItem>
+                             </SelectContent>
+                           </Select>
+                           <FormMessage />
+                         </FormItem>
+                       )}
+                     />
+                     <FormField
+                       control={signUpForm.control}
+                       name="email"
+                       render={({ field }) => (
+                         <FormItem>
+                           <FormLabel>Email</FormLabel>
+                           <FormControl>
+                             <Input type="email" placeholder="john@example.com" {...field} />
+                           </FormControl>
+                           <FormMessage />
+                         </FormItem>
+                       )}
+                     />
                     <FormField
                       control={signUpForm.control}
                       name="password"
