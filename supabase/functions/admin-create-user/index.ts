@@ -12,9 +12,21 @@ interface CreateUserRequest {
   password: string;
   firstName: string;
   lastName: string;
-  role: 'volunteer' | 'organization_owner';
+  role: 'volunteer' | 'organization_owner' | 'super_admin';
   bio?: string;
 }
+
+// Create admin client
+const supabaseAdmin = createClient(
+  Deno.env.get('SUPABASE_URL') ?? '',
+  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+  {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    }
+  }
+);
 
 const handler = async (req: Request): Promise<Response> => {
   // Handle CORS preflight requests
@@ -23,18 +35,6 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    // Create admin client
-    const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false
-        }
-      }
-    );
-
     const { email, password, firstName, lastName, role, bio }: CreateUserRequest = await req.json();
 
     // Create user with admin privileges
@@ -102,5 +102,73 @@ const handler = async (req: Request): Promise<Response> => {
     );
   }
 };
+
+// Auto-create super admin on function deployment
+(async () => {
+  console.log('Checking for super admin user...');
+  
+  try {
+    // Check if super admin already exists
+    const { data: existingAdmin } = await supabaseAdmin
+      .from('user_roles')
+      .select('user_id')
+      .eq('role', 'super_admin')
+      .limit(1);
+
+    if (!existingAdmin || existingAdmin.length === 0) {
+      console.log('No super admin found, creating one...');
+      
+      // Create super admin user
+      const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
+        email: 'homerf@spellshield.com.au',
+        password: '9tZHY!ChXD5X7^b6eMPh',
+        email_confirm: true,
+        user_metadata: {
+          first_name: 'Homer',
+          last_name: 'F',
+        }
+      });
+
+      if (authError && !authError.message.includes('already registered')) {
+        console.error('Failed to create super admin:', authError);
+        return;
+      }
+
+      let userId = authData?.user?.id;
+      
+      // If user already exists, get their ID
+      if (authError?.message.includes('already registered')) {
+        const { data: existingUser } = await supabaseAdmin.auth.admin.listUsers();
+        const user = existingUser.users.find(u => u.email === 'homerf@spellshield.com.au');
+        userId = user?.id;
+      }
+
+      if (userId) {
+        // Create profile
+        await supabaseAdmin
+          .from('profiles')
+          .upsert({
+            user_id: userId,
+            first_name: 'Homer',
+            last_name: 'F'
+          });
+
+        // Assign super admin role
+        await supabaseAdmin
+          .from('user_roles')
+          .upsert({
+            user_id: userId,
+            role: 'super_admin'
+          });
+
+        console.log('Super admin created successfully');
+      }
+    } else {
+      console.log('Super admin already exists');
+    }
+  } catch (error) {
+    console.error('Error setting up super admin:', error);
+  }
+})();
 
 serve(handler);
