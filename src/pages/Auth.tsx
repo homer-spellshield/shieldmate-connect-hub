@@ -1,4 +1,5 @@
-import { useState } from 'react';
+// src/pages/Auth.tsx
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
@@ -10,9 +11,8 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Shield } from 'lucide-react';
-import { useEffect } from 'react';
 
 const signInSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
@@ -20,10 +20,17 @@ const signInSchema = z.object({
 });
 
 const signUpSchema = z.object({
-  email: z.string().email('Please enter a valid email address'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
+  orgName: z.string().min(2, 'Organization name is required'),
   firstName: z.string().min(1, 'First name is required'),
   lastName: z.string().min(1, 'Last name is required'),
+  email: z.string().email('Please enter a valid email address'),
+  password: z.string().min(8, 'Password must be at least 8 characters'),
+  isAuthorized: z.boolean().refine(val => val === true, {
+    message: 'You must confirm your authorization to register.'
+  }),
+  agreedToTerms: z.boolean().refine(val => val === true, {
+    message: 'You must agree to the terms and privacy policy.'
+  }),
 });
 
 type SignInForm = z.infer<typeof signInSchema>;
@@ -42,19 +49,19 @@ const Auth = () => {
 
   const signInForm = useForm<SignInForm>({
     resolver: zodResolver(signInSchema),
-    defaultValues: {
-      email: '',
-      password: '',
-    },
+    defaultValues: { email: '', password: '' },
   });
 
   const signUpForm = useForm<SignUpForm>({
     resolver: zodResolver(signUpSchema),
     defaultValues: {
-      email: '',
-      password: '',
+      orgName: '',
       firstName: '',
       lastName: '',
+      email: '',
+      password: '',
+      isAuthorized: false,
+      agreedToTerms: false,
     },
   });
 
@@ -66,8 +73,9 @@ const Auth = () => {
   };
 
   const handleSignUp = async (data: SignUpForm) => {
-    const { error } = await signUp(data.email, data.password, data.firstName, data.lastName);
+    const { error } = await signUp(data.email, data.password, data.firstName, data.lastName, data.orgName, data.isAuthorized);
     if (!error) {
+      signUpForm.reset();
       setActiveTab('signin');
     }
   };
@@ -81,7 +89,7 @@ const Auth = () => {
           </div>
           <h1 className="text-3xl font-bold tracking-tight">ShieldMate</h1>
           <p className="text-muted-foreground">
-            Connect organizations with tech volunteers to strengthen cybersecurity
+            Connecting organizations with tech volunteers
           </p>
         </div>
 
@@ -89,7 +97,7 @@ const Auth = () => {
           <CardHeader>
             <CardTitle>Welcome to ShieldMate</CardTitle>
             <CardDescription>
-              Organization registration and volunteer/organization login portal
+              Login or register your organization to get started.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -99,40 +107,23 @@ const Auth = () => {
                 <TabsTrigger value="signup">Organization Signup</TabsTrigger>
               </TabsList>
 
-              <TabsContent value="signin" className="space-y-4">
-                <div className="text-sm text-muted-foreground mb-4 p-3 bg-muted rounded-md">
-                  <strong>Sign in as:</strong><br/>
-                  • Organization members<br/>
-                  • Volunteers (created by admins)
-                </div>
+              <TabsContent value="signin" className="pt-4">
                 <Form {...signInForm}>
                   <form onSubmit={signInForm.handleSubmit(handleSignIn)} className="space-y-4">
-                    <FormField
-                      control={signInForm.control}
-                      name="email"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Email</FormLabel>
-                          <FormControl>
-                            <Input type="email" placeholder="Enter your email" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={signInForm.control}
-                      name="password"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Password</FormLabel>
-                          <FormControl>
-                            <Input type="password" placeholder="Enter your password" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                    <FormField control={signInForm.control} name="email" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Email</FormLabel>
+                        <FormControl><Input type="email" placeholder="you@company.com" {...field} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                    <FormField control={signInForm.control} name="password" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Password</FormLabel>
+                        <FormControl><Input type="password" placeholder="Enter your password" {...field} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
                     <Button type="submit" className="w-full" disabled={signInForm.formState.isSubmitting}>
                       {signInForm.formState.isSubmitting ? 'Signing in...' : 'Sign In'}
                     </Button>
@@ -140,69 +131,69 @@ const Auth = () => {
                 </Form>
               </TabsContent>
 
-              <TabsContent value="signup" className="space-y-4">
-                <div className="text-sm text-muted-foreground mb-4 p-3 bg-muted rounded-md">
-                  <strong>Organization Registration:</strong><br/>
-                  Create an account for your organization to post missions and find cybersecurity volunteers.
-                </div>
+              <TabsContent value="signup" className="pt-4">
                 <Form {...signUpForm}>
                   <form onSubmit={signUpForm.handleSubmit(handleSignUp)} className="space-y-4">
+                    <FormField control={signUpForm.control} name="orgName" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Organization Name</FormLabel>
+                        <FormControl><Input placeholder="Your Company Inc." {...field} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
                     <div className="grid grid-cols-2 gap-4">
-                      <FormField
-                        control={signUpForm.control}
-                        name="firstName"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>First Name</FormLabel>
-                            <FormControl>
-                              <Input placeholder="John" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={signUpForm.control}
-                        name="lastName"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Last Name</FormLabel>
-                            <FormControl>
-                              <Input placeholder="Doe" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                     </div>
-                     <FormField
-                       control={signUpForm.control}
-                       name="email"
-                       render={({ field }) => (
-                         <FormItem>
-                           <FormLabel>Email</FormLabel>
-                           <FormControl>
-                             <Input type="email" placeholder="organization@example.com" {...field} />
-                           </FormControl>
-                           <FormMessage />
-                         </FormItem>
-                       )}
-                     />
-                    <FormField
-                      control={signUpForm.control}
-                      name="password"
-                      render={({ field }) => (
+                      <FormField control={signUpForm.control} name="firstName" render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Password</FormLabel>
-                          <FormControl>
-                            <Input type="password" placeholder="Create a password" {...field} />
-                          </FormControl>
+                          <FormLabel>Your First Name</FormLabel>
+                          <FormControl><Input placeholder="John" {...field} /></FormControl>
                           <FormMessage />
                         </FormItem>
-                      )}
-                    />
+                      )} />
+                      <FormField control={signUpForm.control} name="lastName" render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Your Last Name</FormLabel>
+                          <FormControl><Input placeholder="Doe" {...field} /></FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )} />
+                    </div>
+                    <FormField control={signUpForm.control} name="email" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Work Email</FormLabel>
+                        <FormControl><Input type="email" placeholder="you@company.com" {...field} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                    <FormField control={signUpForm.control} name="password" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Password</FormLabel>
+                        <FormControl><Input type="password" placeholder="Create a strong password" {...field} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+
+                    <FormField control={signUpForm.control} name="isAuthorized" render={({ field }) => (
+                        <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                            <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                            <div className="space-y-1 leading-none">
+                                <FormLabel>I confirm that I am authorized to register this organization.</FormLabel>
+                                <FormMessage />
+                            </div>
+                        </FormItem>
+                    )} />
+
+                     <FormField control={signUpForm.control} name="agreedToTerms" render={({ field }) => (
+                        <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                            <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                             <div className="space-y-1 leading-none">
+                                <FormLabel>I agree to the <a href="#" className="underline">Terms of Service</a> and <a href="#" className="underline">Privacy Policy</a>.</FormLabel>
+                                <FormMessage />
+                            </div>
+                        </FormItem>
+                    )} />
+
                     <Button type="submit" className="w-full" disabled={signUpForm.formState.isSubmitting}>
-                      {signUpForm.formState.isSubmitting ? 'Creating account...' : 'Create Account'}
+                      {signUpForm.formState.isSubmitting ? 'Creating Account...' : 'Create Account'}
                     </Button>
                   </form>
                 </Form>
