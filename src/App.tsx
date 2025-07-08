@@ -11,6 +11,7 @@ import MissionDiscovery from "./pages/MissionDiscovery";
 import OrganisationDashboard from "./pages/OrganisationDashboard";
 import VolunteerProfile from "./pages/VolunteerProfile";
 import AdminDashboard from "./pages/AdminDashboard";
+import AdminLogin from "./pages/AdminLogin";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
@@ -31,6 +32,7 @@ const App = () => {
           <AuthProvider>
             <Routes>
               <Route path="/auth" element={<Auth />} />
+              <Route path="/admin-login" element={<AdminLogin />} />
               <Route path="/*" element={
                 <Layout>
                   <Routes>

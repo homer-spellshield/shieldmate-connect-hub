@@ -89,17 +89,22 @@ const Auth = () => {
           <CardHeader>
             <CardTitle>Welcome to ShieldMate</CardTitle>
             <CardDescription>
-              Create an organization account or sign in to an existing one
+              Organization registration and volunteer/organization login portal
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Tabs value={activeTab} onValueChange={setActiveTab}>
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="signin">Sign In</TabsTrigger>
-                <TabsTrigger value="signup">Sign Up</TabsTrigger>
+                <TabsTrigger value="signup">Organization Signup</TabsTrigger>
               </TabsList>
 
               <TabsContent value="signin" className="space-y-4">
+                <div className="text-sm text-muted-foreground mb-4 p-3 bg-muted rounded-md">
+                  <strong>Sign in as:</strong><br/>
+                  • Organization members<br/>
+                  • Volunteers (created by admins)
+                </div>
                 <Form {...signInForm}>
                   <form onSubmit={signInForm.handleSubmit(handleSignIn)} className="space-y-4">
                     <FormField
@@ -136,6 +141,10 @@ const Auth = () => {
               </TabsContent>
 
               <TabsContent value="signup" className="space-y-4">
+                <div className="text-sm text-muted-foreground mb-4 p-3 bg-muted rounded-md">
+                  <strong>Organization Registration:</strong><br/>
+                  Create an account for your organization to post missions and find cybersecurity volunteers.
+                </div>
                 <Form {...signUpForm}>
                   <form onSubmit={signUpForm.handleSubmit(handleSignUp)} className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
