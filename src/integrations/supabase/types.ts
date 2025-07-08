@@ -81,9 +81,13 @@ export type Database = {
           contact_email: string | null
           created_at: string
           description: string | null
+          domain: string | null
           id: string
+          last_mission_post_at: string | null
           logo_url: string | null
+          mission_posts_this_month: number
           name: string
+          subscription_tier: string
           updated_at: string
           website_url: string | null
         }
@@ -91,9 +95,13 @@ export type Database = {
           contact_email?: string | null
           created_at?: string
           description?: string | null
+          domain?: string | null
           id?: string
+          last_mission_post_at?: string | null
           logo_url?: string | null
+          mission_posts_this_month?: number
           name: string
+          subscription_tier?: string
           updated_at?: string
           website_url?: string | null
         }
@@ -101,9 +109,13 @@ export type Database = {
           contact_email?: string | null
           created_at?: string
           description?: string | null
+          domain?: string | null
           id?: string
+          last_mission_post_at?: string | null
           logo_url?: string | null
+          mission_posts_this_month?: number
           name?: string
+          subscription_tier?: string
           updated_at?: string
           website_url?: string | null
         }
