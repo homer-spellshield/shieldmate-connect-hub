@@ -4,7 +4,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { VolunteerManagement } from '@/components/admin/VolunteerManagement';
 import { SkillManagement } from '@/components/admin/SkillManagement';
 import { SystemOverview } from '@/components/admin/SystemOverview';
-import { Users, Award, BarChart3 } from 'lucide-react';
+import { MissionTemplateManagement } from '@/components/admin/MissionTemplateManagement';
+import { Users, Award, BarChart3, FileText } from 'lucide-react';
 
 const AdminDashboard = () => {
   return (
@@ -17,7 +18,7 @@ const AdminDashboard = () => {
       </div>
 
       <Tabs defaultValue="overview" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="overview" className="flex items-center gap-2">
             <BarChart3 className="h-4 w-4" />
             Overview
@@ -29,6 +30,10 @@ const AdminDashboard = () => {
           <TabsTrigger value="skills" className="flex items-center gap-2">
             <Award className="h-4 w-4" />
             Skills
+          </TabsTrigger>
+          <TabsTrigger value="templates" className="flex items-center gap-2">
+            <FileText className="h-4 w-4" />
+            Templates
           </TabsTrigger>
           <TabsTrigger value="organizations" className="flex items-center gap-2">
             <Users className="h-4 w-4" />
@@ -46,6 +51,10 @@ const AdminDashboard = () => {
 
         <TabsContent value="skills">
           <SkillManagement />
+        </TabsContent>
+
+        <TabsContent value="templates">
+          <MissionTemplateManagement />
         </TabsContent>
 
         <TabsContent value="organizations">

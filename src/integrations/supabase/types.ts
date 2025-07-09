@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      mission_template_skills: {
+        Row: {
+          created_at: string
+          id: string
+          skill_id: string
+          template_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          skill_id: string
+          template_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          skill_id?: string
+          template_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mission_template_skills_skill_id_fkey"
+            columns: ["skill_id"]
+            isOneToOne: false
+            referencedRelation: "skills"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mission_template_skills_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "mission_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       mission_templates: {
         Row: {
           created_at: string
