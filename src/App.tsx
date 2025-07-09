@@ -9,6 +9,7 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
 import MissionDiscovery from "./pages/MissionDiscovery";
 import OrganisationDashboard from "./pages/OrganisationDashboard";
+import CreateMission from "./pages/CreateMission";
 import VolunteerProfile from "./pages/VolunteerProfile";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminLogin from "./pages/AdminLogin";
@@ -49,6 +50,11 @@ const App = () => {
                     <Route path="/org-dashboard" element={
                       <ProtectedRoute requiredRoles={['organization_owner', 'team_member']}>
                         <OrganisationDashboard />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/org-dashboard/missions/new" element={
+                      <ProtectedRoute requiredRoles={['organization_owner', 'team_member']}>
+                        <CreateMission />
                       </ProtectedRoute>
                     } />
                     <Route path="/profile" element={

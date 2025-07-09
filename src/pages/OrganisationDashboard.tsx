@@ -41,8 +41,7 @@ const OrganisationDashboard = () => {
   };
 
   const handlePostNewMission = () => {
-    console.log("Post new mission");
-    // Navigate to mission creation page
+    window.location.href = "/org-dashboard/missions/new";
   };
 
   return (
