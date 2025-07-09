@@ -1,11 +1,11 @@
-import { useState } from 'react';
+// src/pages/AdminDashboard.tsx
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { VolunteerManagement } from '@/components/admin/VolunteerManagement';
 import { SkillManagement } from '@/components/admin/SkillManagement';
-import { SystemOverview } from '@/components/admin/SystemOverview';
 import { MissionTemplateManagement } from '@/components/admin/MissionTemplateManagement';
-import { Users, Award, BarChart3, FileText } from 'lucide-react';
+import { SystemOverview } from '@/components/admin/SystemOverview';
+import { Users, Award, BarChart3, Briefcase } from 'lucide-react';
 
 const AdminDashboard = () => {
   return (
@@ -13,7 +13,7 @@ const AdminDashboard = () => {
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
         <p className="text-muted-foreground">
-          Manage volunteers, skills, and system settings
+          Manage volunteers, skills, organizations, and system settings
         </p>
       </div>
 
@@ -31,8 +31,8 @@ const AdminDashboard = () => {
             <Award className="h-4 w-4" />
             Skills
           </TabsTrigger>
-          <TabsTrigger value="templates" className="flex items-center gap-2">
-            <FileText className="h-4 w-4" />
+          <TabsTrigger value="mission_templates" className="flex items-center gap-2">
+            <Briefcase className="h-4 w-4" />
             Templates
           </TabsTrigger>
           <TabsTrigger value="organizations" className="flex items-center gap-2">
@@ -53,7 +53,7 @@ const AdminDashboard = () => {
           <SkillManagement />
         </TabsContent>
 
-        <TabsContent value="templates">
+        <TabsContent value="mission_templates">
           <MissionTemplateManagement />
         </TabsContent>
 
