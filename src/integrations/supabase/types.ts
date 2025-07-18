@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      mission_applications: {
+        Row: {
+          application_message: string | null
+          applied_at: string
+          created_at: string
+          id: string
+          mission_id: string
+          status: string
+          updated_at: string
+          volunteer_id: string
+        }
+        Insert: {
+          application_message?: string | null
+          applied_at?: string
+          created_at?: string
+          id?: string
+          mission_id: string
+          status?: string
+          updated_at?: string
+          volunteer_id: string
+        }
+        Update: {
+          application_message?: string | null
+          applied_at?: string
+          created_at?: string
+          id?: string
+          mission_id?: string
+          status?: string
+          updated_at?: string
+          volunteer_id?: string
+        }
+        Relationships: []
+      }
       mission_template_skills: {
         Row: {
           created_at: string
@@ -313,6 +346,33 @@ export type Database = {
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
+        }
+        Relationships: []
+      }
+      volunteer_skills: {
+        Row: {
+          assigned_at: string
+          assigned_by: string
+          created_at: string
+          id: string
+          skill_id: string
+          volunteer_id: string
+        }
+        Insert: {
+          assigned_at?: string
+          assigned_by: string
+          created_at?: string
+          id?: string
+          skill_id: string
+          volunteer_id: string
+        }
+        Update: {
+          assigned_at?: string
+          assigned_by?: string
+          created_at?: string
+          id?: string
+          skill_id?: string
+          volunteer_id?: string
         }
         Relationships: []
       }
