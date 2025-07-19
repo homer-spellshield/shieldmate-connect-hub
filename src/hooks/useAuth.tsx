@@ -4,7 +4,7 @@ import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
-// List of disallowed free email providers
+// List of disallowed free email providers for organization sign-up
 const freeEmailDomains = [
   'gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'aol.com', 'icloud.com', 'mail.com', 'gmx.com'
 ];
@@ -71,14 +71,13 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      (_event, session) => {
         setSession(session);
-        setUser(session?.user ?? null);
+        const currentUser = session?.user ?? null;
+        setUser(currentUser);
         
-        if (session?.user) {
-          setTimeout(() => {
-            fetchProfile(session.user.id);
-          }, 0);
+        if (currentUser) {
+          fetchProfile(currentUser.id);
         } else {
           setProfile(null);
           setUserRoles([]);
@@ -88,12 +87,14 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       }
     );
 
+    // Initial session fetch
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
-      setUser(session?.user ?? null);
+      const currentUser = session?.user ?? null;
+      setUser(currentUser);
       
-      if (session?.user) {
-        fetchProfile(session.user.id);
+      if (currentUser) {
+        fetchProfile(currentUser.id);
       }
       
       setLoading(false);
@@ -103,6 +104,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   }, []);
 
   const signUp = async (email: string, password: string, firstName: string, lastName: string, orgName: string, isAuthorized: boolean) => {
+    // This function now exclusively handles ORGANIZATION sign-ups.
+
     // 1. Authorization Check
     if (!isAuthorized) {
       const error = { name: 'AuthError', message: 'You must confirm you are authorized to register this organization.' };
@@ -136,7 +139,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       return { error };
     }
 
-    // 4. Proceed with Supabase User Signup
+    // 4. Proceed with Supabase User Signup for the organization
     const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
       email,
       password,
