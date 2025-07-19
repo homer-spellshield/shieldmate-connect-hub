@@ -36,7 +36,6 @@ interface Organization {
   name: string;
 }
 
-// Random operation names for title generation
 const operationNames = [
   'Phoenix', 'Eagle', 'Falcon', 'Thunder', 'Lightning', 'Storm', 'Blaze', 'Arrow',
   'Shield', 'Compass', 'Anchor', 'Bridge', 'Summit', 'Dawn', 'Horizon', 'Velocity'
@@ -62,16 +61,16 @@ const CreateMission = () => {
 
   useEffect(() => {
     const fetchData = async () => {
+      if (!user) return;
       try {
-        // Fetch mission templates
         const { data: templatesData, error: templatesError } = await supabase
           .from('mission_templates')
           .select('id, title, description, estimated_hours, difficulty_level')
           .order('title');
 
         if (templatesError) throw templatesError;
+        setTemplates(templatesData || []);
 
-        // Fetch user's organization
         const { data: orgMemberData, error: orgError } = await supabase
           .from('organization_members')
           .select(`
@@ -81,18 +80,16 @@ const CreateMission = () => {
               name
             )
           `)
-          .eq('user_id', user?.id)
+          .eq('user_id', user.id)
           .single();
 
         if (orgError) throw orgError;
 
-        setTemplates(templatesData || []);
         setUserOrganization(orgMemberData?.organizations as Organization);
       } catch (error: any) {
-        console.error('Error fetching data:', error);
         toast({
           title: 'Error',
-          description: 'Failed to load mission templates. Please try again.',
+          description: 'Failed to load necessary data. Please try again.',
           variant: 'destructive',
         });
       } finally {
@@ -100,12 +97,10 @@ const CreateMission = () => {
       }
     };
 
-    if (user) {
-      fetchData();
-    }
+    fetchData();
   }, [user, toast]);
 
-  const handleTemplateSelect = async (templateId: string) => {
+  const handleTemplateSelect = (templateId: string) => {
     const template = templates.find(t => t.id === templateId);
     if (template) {
       setSelectedTemplate(template);
@@ -131,6 +126,7 @@ const CreateMission = () => {
         template_id: values.template_id,
         estimated_hours: selectedTemplate?.estimated_hours,
         difficulty_level: selectedTemplate?.difficulty_level,
+        status: 'open',
       });
 
       if (error) throw error;
@@ -142,7 +138,6 @@ const CreateMission = () => {
 
       navigate('/org-dashboard');
     } catch (error: any) {
-      console.error('Error creating mission:', error);
       toast({
         title: 'Error',
         description: 'Failed to post mission. Please try again.',
