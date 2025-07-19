@@ -1,4 +1,6 @@
+
 import { ReactNode } from "react";
+import { Link } from "react-router-dom";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { FloatingChatLauncher } from "@/components/FloatingChatLauncher";
@@ -69,9 +71,11 @@ export const Layout = ({ children }: LayoutProps) => {
                     <DropdownMenuContent align="end" className="w-56">
                       <DropdownMenuLabel>My Account</DropdownMenuLabel>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem>
-                        <User className="mr-2 h-4 w-4" />
-                        Profile
+                      <DropdownMenuItem asChild>
+                        <Link to="/profile" className="flex items-center">
+                          <User className="mr-2 h-4 w-4" />
+                          Profile
+                        </Link>
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem onClick={handleSignOut}>

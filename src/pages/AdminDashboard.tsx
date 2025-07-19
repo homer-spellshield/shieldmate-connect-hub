@@ -1,4 +1,4 @@
-// src/pages/AdminDashboard.tsx
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { VolunteerManagement } from '@/components/admin/VolunteerManagement';
@@ -13,12 +13,12 @@ const AdminDashboard = () => {
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
         <p className="text-muted-foreground">
-          Manage volunteers, skills, organizations, and system settings
+          Manage volunteers, skills, mission templates, and system settings
         </p>
       </div>
 
       <Tabs defaultValue="overview" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="overview" className="flex items-center gap-2">
             <BarChart3 className="h-4 w-4" />
             Overview
@@ -34,10 +34,6 @@ const AdminDashboard = () => {
           <TabsTrigger value="mission_templates" className="flex items-center gap-2">
             <Briefcase className="h-4 w-4" />
             Templates
-          </TabsTrigger>
-          <TabsTrigger value="organizations" className="flex items-center gap-2">
-            <Users className="h-4 w-4" />
-            Organizations
           </TabsTrigger>
         </TabsList>
 
@@ -55,22 +51,6 @@ const AdminDashboard = () => {
 
         <TabsContent value="mission_templates">
           <MissionTemplateManagement />
-        </TabsContent>
-
-        <TabsContent value="organizations">
-          <Card>
-            <CardHeader>
-              <CardTitle>Organization Management</CardTitle>
-              <CardDescription>
-                Manage registered organizations and their status
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                Organization management interface coming soon...
-              </p>
-            </CardContent>
-          </Card>
         </TabsContent>
       </Tabs>
     </div>

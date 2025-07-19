@@ -1,3 +1,4 @@
+
 import { useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -17,7 +18,12 @@ import AdminLogin from "./pages/AdminLogin";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import TeamManagement from "./pages/TeamManagement";
-import MissionControl from "./pages/MissionControl"; // 1. Import the new page
+import MissionControl from "./pages/MissionControl";
+import Applications from "./pages/Applications";
+import OrgMissions from "./pages/OrgMissions";
+import OrgProfile from "./pages/OrgProfile";
+import Settings from "./pages/Settings";
+import Help from "./pages/Help";
 
 const queryClient = new QueryClient();
 
@@ -52,6 +58,11 @@ function App() {
                         <MissionDiscovery />
                       </ProtectedRoute>
                     } />
+                    <Route path="/applications" element={
+                      <ProtectedRoute requiredRoles={['volunteer']}>
+                        <Applications />
+                      </ProtectedRoute>
+                    } />
                     <Route path="/org-dashboard" element={
                       <ProtectedRoute requiredRoles={['organization_owner', 'team_member']}>
                         <OrganisationDashboard />
@@ -62,12 +73,21 @@ function App() {
                         <CreateMission />
                       </ProtectedRoute>
                     } />
+                    <Route path="/org-missions" element={
+                      <ProtectedRoute requiredRoles={['organization_owner', 'team_member']}>
+                        <OrgMissions />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/org-profile" element={
+                      <ProtectedRoute requiredRoles={['organization_owner', 'team_member']}>
+                        <OrgProfile />
+                      </ProtectedRoute>
+                    } />
                     <Route path="/team" element={
                       <ProtectedRoute requiredRoles={['organization_owner', 'team_member']}>
                         <TeamManagement />
                       </ProtectedRoute>
                     } />
-                    {/* 2. Add the new dynamic route for MissionControl */}
                     <Route path="/mission/:missionId" element={
                       <ProtectedRoute requiredRoles={['organization_owner', 'team_member', 'volunteer']}>
                         <MissionControl />
@@ -76,6 +96,16 @@ function App() {
                     <Route path="/profile" element={
                       <ProtectedRoute>
                         <VolunteerProfile />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/settings" element={
+                      <ProtectedRoute>
+                        <Settings />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/help" element={
+                      <ProtectedRoute>
+                        <Help />
                       </ProtectedRoute>
                     } />
                     <Route path="/admin" element={

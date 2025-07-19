@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { 
   Shield, 
@@ -8,9 +9,10 @@ import {
   Building,
   Target,
   Users,
-  Award
+  Award,
+  FileText
 } from "lucide-react";
-import { NavLink, useLocation } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import {
   Sidebar,
   SidebarContent,
@@ -27,16 +29,16 @@ import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
 
 const adminMenuItems = [
-  { title: "Admin Dashboard", url: "/admin", icon: Settings },
+  { title: "System Overview", url: "/admin", icon: Target },
   { title: "Manage Volunteers", url: "/admin", icon: Users },
   { title: "Manage Skills", url: "/admin", icon: Award },
-  { title: "System Overview", url: "/admin", icon: Target },
+  { title: "Mission Templates", url: "/admin", icon: FileText },
 ];
 
 const volunteerMenuItems = [
   { title: "Dashboard", url: "/", icon: Target },
   { title: "Discover Missions", url: "/missions", icon: Search },
-  { title: "My Applications", url: "/applications", icon: Users },
+  { title: "My Applications", url: "/applications", icon: FileText },
   { title: "Profile", url: "/profile", icon: User },
 ];
 
@@ -48,8 +50,8 @@ const organisationMenuItems = [
 ];
 
 const commonMenuItems = [
-  { title: "Help & Support", url: "/help", icon: HelpCircle },
   { title: "Settings", url: "/settings", icon: Settings },
+  { title: "Help & Support", url: "/help", icon: HelpCircle },
 ];
 
 export function AppSidebar() {
@@ -72,7 +74,13 @@ export function AppSidebar() {
     menuItems = organisationMenuItems;
   }
   
-  const isActive = (path: string) => location.pathname === path;
+  const isActive = (path: string) => {
+    if (path === '/admin') {
+      return location.pathname === '/admin';
+    }
+    return location.pathname === path;
+  };
+  
   const getNavClass = (isActive: boolean) => 
     isActive ? "bg-primary text-primary-foreground" : "hover:bg-accent hover:text-accent-foreground";
 
@@ -104,13 +112,13 @@ export function AppSidebar() {
               {menuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
-                    <NavLink 
+                    <Link 
                       to={item.url} 
-                      className={({ isActive }) => `nav-item ${getNavClass(isActive)}`}
+                      className={`nav-item ${getNavClass(isActive(item.url))}`}
                     >
                       <item.icon className="w-5 h-5" />
                       {!collapsed && <span>{item.title}</span>}
-                    </NavLink>
+                    </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
@@ -124,17 +132,20 @@ export function AppSidebar() {
             <SidebarGroupLabel>Your Progress</SidebarGroupLabel>
             <SidebarGroupContent>
               <div className="px-3 py-2 space-y-3">
-                <div className="rank-badge text-center">
+                <div className="text-center p-2 bg-accent rounded-lg">
                   <Award className="w-4 h-4 inline mr-1" />
-                  ShieldMate Specialist
+                  <span className="text-sm font-medium">ShieldMate Specialist</span>
                 </div>
                 <div>
                   <div className="flex justify-between text-xs text-muted-foreground mb-1">
                     <span>Level {profile?.level || 1}</span>
                     <span>{profile?.xp_points || 0} / 2,000 XP</span>
                   </div>
-                  <div className="progress-bar">
-                    <div className="progress-fill" style={{ width: `${((profile?.xp_points || 0) / 2000) * 100}%` }} />
+                  <div className="w-full bg-secondary rounded-full h-2">
+                    <div 
+                      className="bg-primary h-2 rounded-full transition-all duration-300" 
+                      style={{ width: `${Math.min(((profile?.xp_points || 0) / 2000) * 100, 100)}%` }} 
+                    />
                   </div>
                 </div>
                 <div className="flex justify-center">
@@ -157,13 +168,13 @@ export function AppSidebar() {
               {commonMenuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
-                    <NavLink 
+                    <Link 
                       to={item.url}
-                      className={({ isActive }) => `nav-item ${getNavClass(isActive)}`}
+                      className={`nav-item ${getNavClass(isActive(item.url))}`}
                     >
                       <item.icon className="w-5 h-5" />
                       {!collapsed && <span>{item.title}</span>}
-                    </NavLink>
+                    </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
