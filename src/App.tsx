@@ -17,6 +17,7 @@ import AdminLogin from "./pages/AdminLogin";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import TeamManagement from "./pages/TeamManagement";
+import MissionControl from "./pages/MissionControl"; // 1. Import the new page
 
 const queryClient = new QueryClient();
 
@@ -64,6 +65,12 @@ function App() {
                     <Route path="/team" element={
                       <ProtectedRoute requiredRoles={['organization_owner', 'team_member']}>
                         <TeamManagement />
+                      </ProtectedRoute>
+                    } />
+                    {/* 2. Add the new dynamic route for MissionControl */}
+                    <Route path="/mission/:missionId" element={
+                      <ProtectedRoute requiredRoles={['organization_owner', 'team_member', 'volunteer']}>
+                        <MissionControl />
                       </ProtectedRoute>
                     } />
                     <Route path="/profile" element={
