@@ -83,23 +83,39 @@ const TeamManagement = () => {
       const org = orgMemberData.organizations as { id: string, name: string };
       setOrganization(org);
 
+      // First get organization members
       const { data: membersData, error: membersError } = await supabase
         .from('organization_members')
-        .select(`
-          id,
-          role,
-          user_id,
-          profiles (
-            first_name,
-            last_name,
-            avatar_url,
-            email
-          )
-        `)
+        .select('id, role, user_id')
         .eq('organization_id', org.id);
 
       if (membersError) throw membersError;
-      setTeamMembers(membersData as TeamMember[]);
+
+      // Then get profiles for each member
+      const userIds = membersData?.map(m => m.user_id) || [];
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('user_id, first_name, last_name, avatar_url')
+        .in('user_id', userIds);
+
+      if (profilesError) throw profilesError;
+
+      // Get user emails from auth metadata (since we can't directly query auth.users)
+      // We'll need to fetch this differently - for now, let's use a workaround
+      const membersWithProfiles = membersData?.map(member => {
+        const profile = profilesData?.find(p => p.user_id === member.user_id);
+        return {
+          ...member,
+          profiles: profile ? {
+            first_name: profile.first_name,
+            last_name: profile.last_name,
+            avatar_url: profile.avatar_url,
+            email: null // We'll need to get this from somewhere else
+          } : null
+        };
+      }) || [];
+
+      setTeamMembers(membersWithProfiles as TeamMember[]);
     } catch (error: any) {
       toast({
         title: "Error fetching team members",
