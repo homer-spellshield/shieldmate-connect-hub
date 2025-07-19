@@ -36,54 +36,55 @@ const VolunteerDashboard = () => {
 
   useEffect(() => {
     const fetchData = async () => {
-      if (!user) return;
+      if (!user) {
+        setLoading(false);
+        return;
+      }
 
       try {
-        // Fetch user profile with basic fields only
+        setLoading(true);
+        
+        // Fetch user profile with error handling
         const { data: profileData } = await supabase
           .from('profiles')
           .select('first_name, last_name')
           .eq('user_id', user.id)
           .maybeSingle();
 
-        if (profileData) {
-          setProfile({
-            ...profileData,
-            xp_points: 0,
-            level: 1
-          });
-        }
+        setProfile(profileData ? {
+          ...profileData,
+          xp_points: 0,
+          level: 1
+        } : null);
 
-        // Fetch available missions manually to avoid relationship issues
-        const { data: missionData } = await supabase
+        // Fetch available missions
+        const { data: missionsData, error: missionsError } = await supabase
           .from('missions')
-          .select('id, title, description, estimated_hours, difficulty_level, organization_id')
+          .select(`
+            id,
+            title,
+            description,
+            estimated_hours,
+            difficulty_level,
+            organizations (
+              name
+            )
+          `)
           .eq('status', 'open')
-          .limit(3)
-          .order('created_at', { ascending: false });
+          .limit(6);
 
-        if (missionData && missionData.length > 0) {
-          // Fetch organization names separately
-          const orgIds = [...new Set(missionData.map(m => m.organization_id))];
-          const { data: orgData } = await supabase
-            .from('organizations')
-            .select('id, name')
-            .in('id', orgIds);
-
-          // Combine data
-          const combinedMissions = missionData.map(mission => ({
-            ...mission,
-            organizations: orgData?.find(org => org.id === mission.organization_id) || { name: 'Unknown Organization' }
-          }));
-
-          setMissions(combinedMissions as Mission[]);
+        if (missionsError) {
+          console.error('Error fetching missions:', missionsError);
+        } else {
+          setMissions(missionsData || []);
         }
+
       } catch (error) {
         console.error('Error fetching data:', error);
         toast({
-          title: "Error",
-          description: "Failed to load dashboard data",
-          variant: "destructive"
+          title: 'Error',
+          description: 'Failed to load dashboard data',
+          variant: 'destructive',
         });
       } finally {
         setLoading(false);
@@ -96,152 +97,225 @@ const VolunteerDashboard = () => {
   if (loading) {
     return (
       <div className="space-y-6">
-        <Skeleton className="h-8 w-64" />
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 space-y-6">
-            <Skeleton className="h-32" />
-            <Skeleton className="h-32" />
-          </div>
-          <div className="space-y-6">
-            <Skeleton className="h-32" />
-          </div>
+        <div>
+          <Skeleton className="h-8 w-64 mb-2" />
+          <Skeleton className="h-4 w-96" />
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {[1, 2, 3, 4].map((i) => (
+            <Card key={i}>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-4 w-4" />
+              </CardHeader>
+              <CardContent>
+                <Skeleton className="h-8 w-16 mb-2" />
+                <Skeleton className="h-3 w-32" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+        
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Card>
+            <CardHeader>
+              <Skeleton className="h-6 w-48" />
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="border rounded-lg p-4">
+                    <Skeleton className="h-5 w-64 mb-2" />
+                    <Skeleton className="h-4 w-48 mb-2" />
+                    <div className="flex gap-2">
+                      <Skeleton className="h-5 w-16" />
+                      <Skeleton className="h-5 w-20" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader>
+              <Skeleton className="h-6 w-32" />
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <Skeleton className="h-16 w-full" />
+                <Skeleton className="h-4 w-full" />
+                <Skeleton className="h-8 w-32" />
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     );
   }
 
-  const firstName = profile?.first_name || 'Volunteer';
-  const xpPoints = profile?.xp_points || 0;
-  const level = profile?.level || 1;
+  const displayName = profile?.first_name 
+    ? `${profile.first_name} ${profile.last_name || ''}`.trim()
+    : 'Volunteer';
 
   return (
     <div className="space-y-6">
-      {/* Welcome Header */}
-      <div className="space-y-2">
-        <h1 className="text-3xl font-bold text-foreground">Welcome back, {firstName}!</h1>
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight">Welcome back, {displayName}!</h1>
         <p className="text-muted-foreground">
-          Ready to make a difference? Here are some missions that match your skills.
+          Ready to make a difference? Here's what's happening in your volunteer journey.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column - Recommended Missions */}
-        <div className="lg:col-span-2 space-y-6">
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold">Recommended for You</h2>
-              <Button variant="outline" size="sm" onClick={() => window.location.href = '/missions'}>
-                View All Missions
-              </Button>
-            </div>
-            
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Current Level</CardTitle>
+            <Award className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{profile?.level || 1}</div>
+            <p className="text-xs text-muted-foreground">
+              Volunteer Status
+            </p>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">XP Points</CardTitle>
+            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{profile?.xp_points || 0}</div>
+            <p className="text-xs text-muted-foreground">
+              Experience gained
+            </p>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Active Missions</CardTitle>
+            <Target className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">0</div>
+            <p className="text-xs text-muted-foreground">
+              Currently participating
+            </p>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Hours Contributed</CardTitle>
+            <Clock className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">0</div>
+            <p className="text-xs text-muted-foreground">
+              Total volunteer time
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Available Missions */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Available Missions</CardTitle>
+            <p className="text-sm text-muted-foreground">
+              Discover new opportunities to make an impact
+            </p>
+          </CardHeader>
+          <CardContent>
             {missions.length === 0 ? (
-              <Card>
-                <CardContent className="pt-6 text-center">
-                  <p className="text-muted-foreground mb-4">No missions available at the moment.</p>
-                  <Button onClick={() => window.location.href = '/missions'}>
-                    Explore All Missions
-                  </Button>
-                </CardContent>
-              </Card>
+              <div className="text-center py-8">
+                <p className="text-muted-foreground">No missions available at the moment.</p>
+                <p className="text-sm text-muted-foreground">Check back later for new opportunities!</p>
+              </div>
             ) : (
               <div className="space-y-4">
-                {missions.map((mission) => (
-                  <Card key={mission.id}>
-                    <CardHeader>
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <h3 className="font-semibold">{mission.title}</h3>
-                          <p className="text-sm text-muted-foreground">{mission.organizations?.name || 'Organization'}</p>
-                        </div>
-                        <Badge variant="outline">
-                          {mission.difficulty_level || 'Open'}
+                {missions.slice(0, 3).map((mission) => (
+                  <div key={mission.id} className="border rounded-lg p-4 hover:bg-accent/50 transition-colors">
+                    <h4 className="font-medium mb-2">{mission.title}</h4>
+                    <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
+                      {mission.description}
+                    </p>
+                    <div className="flex items-center gap-2 mb-3">
+                      {mission.difficulty_level && (
+                        <Badge variant="outline" className="capitalize">
+                          {mission.difficulty_level}
                         </Badge>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-sm text-muted-foreground mb-4">{mission.description}</p>
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                          <Clock className="h-4 w-4" />
-                          {mission.estimated_hours ? `${mission.estimated_hours} hours` : 'TBD'}
-                        </div>
-                        <Button size="sm" onClick={() => window.location.href = `/mission/${mission.id}`}>
-                          View Details
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
+                      )}
+                      {mission.estimated_hours && (
+                        <Badge variant="secondary">
+                          {mission.estimated_hours}h
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">
+                        {mission.organizations?.name || 'Organization'}
+                      </span>
+                      <Button size="sm" variant="outline">
+                        Learn More
+                      </Button>
+                    </div>
+                  </div>
                 ))}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Right Column - Stats & Progress */}
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Award className="h-5 w-5" />
-                ShieldMate Specialist
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span>Level {level}</span>
-                  <span>{xpPoints} / {level * 2000} XP</span>
-                </div>
-                <Progress value={(xpPoints / (level * 2000)) * 100} className="h-2" />
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4 pt-4 border-t">
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-primary">0</div>
-                  <div className="text-xs text-muted-foreground">Missions Completed</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-primary">{xpPoints}</div>
-                  <div className="text-xs text-muted-foreground">Total XP</div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Target className="h-5 w-5" />
-                Quick Stats
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-3">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">Active Applications</span>
-                  <Badge variant="outline">0</Badge>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">Profile Completion</span>
-                  <Badge variant="outline">
-                    {profile?.first_name && profile?.last_name ? '80%' : '40%'}
-                  </Badge>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">Skills Verified</span>
-                  <Badge variant="outline">0</Badge>
-                </div>
-              </div>
-              
-              <div className="pt-4 border-t">
-                <Button size="sm" variant="outline" className="w-full" onClick={() => window.location.href = '/profile'}>
-                  Complete Profile
+                <Button variant="outline" className="w-full">
+                  View All Missions
                 </Button>
               </div>
-            </CardContent>
-          </Card>
-        </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Progress & Next Steps */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Your Progress</CardTitle>
+            <p className="text-sm text-muted-foreground">
+              Track your volunteer journey
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div>
+              <div className="flex justify-between text-sm mb-2">
+                <span>Level Progress</span>
+                <span>{profile?.xp_points || 0} / 2,000 XP</span>
+              </div>
+              <Progress value={Math.min(((profile?.xp_points || 0) / 2000) * 100, 100)} />
+            </div>
+            
+            <div className="space-y-3">
+              <h4 className="font-medium">Next Steps</h4>
+              <div className="space-y-2 text-sm text-muted-foreground">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-primary rounded-full" />
+                  Complete your profile
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-muted rounded-full" />
+                  Apply for your first mission
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-muted rounded-full" />
+                  Join a team
+                </div>
+              </div>
+            </div>
+            
+            <Button className="w-full">
+              Complete Profile
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

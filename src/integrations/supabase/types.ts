@@ -381,11 +381,21 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_user_organizations: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          organization_id: string
+        }[]
+      }
       has_role: {
         Args: {
           _user_id: string
           _role: Database["public"]["Enums"]["app_role"]
         }
+        Returns: boolean
+      }
+      is_organization_owner: {
+        Args: { org_id: string }
         Returns: boolean
       }
     }
