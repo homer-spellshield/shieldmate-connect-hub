@@ -138,13 +138,13 @@ export function AppSidebar() {
                 </div>
                 <div>
                   <div className="flex justify-between text-xs text-muted-foreground mb-1">
-                    <span>Level {profile?.level || 1}</span>
-                    <span>{profile?.xp_points || 0} / 2,000 XP</span>
+                    <span>Level {(profile as any)?.level || 1}</span>
+                    <span>{(profile as any)?.xp_points || 0} / 2,000 XP</span>
                   </div>
                   <div className="w-full bg-secondary rounded-full h-2">
                     <div 
                       className="bg-primary h-2 rounded-full transition-all duration-300" 
-                      style={{ width: `${Math.min(((profile?.xp_points || 0) / 2000) * 100, 100)}%` }} 
+                      style={{ width: `${Math.min((((profile as any)?.xp_points || 0) / 2000) * 100, 100)}%` }} 
                     />
                   </div>
                 </div>

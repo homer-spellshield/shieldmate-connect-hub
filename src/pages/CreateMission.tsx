@@ -76,27 +76,26 @@ const CreateMission = () => {
         }
         setTemplates(templatesData || []);
 
-        // Fetch the user's first organization. Using .limit(1) instead of .single()
-        // prevents errors if a user belongs to multiple organizations.
+        // Fetch the user's organization with better error handling
         const { data: orgMemberData, error: orgError } = await supabase
           .from('organization_members')
           .select(`
             organization_id,
-            organizations (
+            organizations!inner (
               id,
               name
             )
           `)
           .eq('user_id', user.id)
-          .limit(1);
+          .maybeSingle();
 
         if (orgError) {
           console.error("Error fetching organization:", orgError);
           throw new Error("Could not find an organization for your account.");
         }
         
-        if (orgMemberData && orgMemberData.length > 0) {
-            setUserOrganization(orgMemberData[0].organizations as Organization);
+        if (orgMemberData && orgMemberData.organizations) {
+            setUserOrganization(orgMemberData.organizations as Organization);
         } else {
             throw new Error("Your account is not associated with any organization.");
         }

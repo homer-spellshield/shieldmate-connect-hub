@@ -38,7 +38,7 @@ const Settings = () => {
     defaultValues: {
       first_name: profile?.first_name || '',
       last_name: profile?.last_name || '',
-      bio: profile?.bio || '',
+      bio: (profile as any)?.bio || '',
     },
   });
 
