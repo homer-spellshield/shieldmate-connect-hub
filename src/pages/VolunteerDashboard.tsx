@@ -1,62 +1,120 @@
-import { MissionCard } from "@/components/MissionCard";
+import { useEffect, useState } from 'react';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { TrendingUp, Clock, Award, Target } from "lucide-react";
+import { useToast } from '@/hooks/use-toast';
+import { Skeleton } from '@/components/ui/skeleton';
 
-const recommendedMissions = [
-  {
-    id: "1",
-    organisationName: "Local Food Bank",
-    title: "Website Security Audit & Vulnerability Assessment",
-    skills: ["Cybersecurity", "Penetration Testing", "OWASP"],
-    timeCommitment: "2-3 weeks",
-  },
-  {
-    id: "2", 
-    organisationName: "Animal Rescue Center",
-    title: "Cloud Infrastructure Migration to AWS",
-    skills: ["AWS", "DevOps", "Cloud Architecture"],
-    timeCommitment: "4-6 weeks",
-  },
-  {
-    id: "3",
-    organisationName: "Youth Education Center",
-    title: "Mobile App Development for Learning Platform",
-    skills: ["React Native", "Firebase", "UI/UX"],
-    timeCommitment: "6-8 weeks",
-  }
-];
+interface Mission {
+  id: string;
+  title: string;
+  description: string;
+  estimated_hours: number | null;
+  difficulty_level: string | null;
+  organizations: {
+    name: string;
+  } | null;
+}
 
-const activeMissions = [
-  {
-    id: "active-1",
-    title: "E-commerce Security Implementation",
-    organisation: "Community Store Co-op",
-    progress: 65,
-    deadline: "2 weeks",
-  },
-  {
-    id: "active-2", 
-    title: "Database Optimization Project",
-    organisation: "Health Clinic Network",
-    progress: 30,
-    deadline: "1 month",
-  }
-];
+interface Profile {
+  first_name: string | null;
+  last_name: string | null;
+  xp_points: number | null;
+  level: number | null;
+}
 
 const VolunteerDashboard = () => {
-  const handleViewDetails = (id: string) => {
-    console.log("View mission details:", id);
-    // Navigate to mission detail page
-  };
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [missions, setMissions] = useState<Mission[]>([]);
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!user) return;
+
+      try {
+        // Fetch user profile
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('first_name, last_name, xp_points, level')
+          .eq('user_id', user.id)
+          .single();
+
+        if (profileData) {
+          setProfile(profileData);
+        }
+
+        // Fetch available missions manually to avoid relationship issues
+        const { data: missionData } = await supabase
+          .from('missions')
+          .select('id, title, description, estimated_hours, difficulty_level, organization_id')
+          .eq('status', 'open')
+          .limit(3)
+          .order('created_at', { ascending: false });
+
+        if (missionData && missionData.length > 0) {
+          // Fetch organization names separately
+          const orgIds = [...new Set(missionData.map(m => m.organization_id))];
+          const { data: orgData } = await supabase
+            .from('organizations')
+            .select('id, name')
+            .in('id', orgIds);
+
+          // Combine data
+          const combinedMissions = missionData.map(mission => ({
+            ...mission,
+            organizations: orgData?.find(org => org.id === mission.organization_id) || { name: 'Unknown Organization' }
+          }));
+
+          setMissions(combinedMissions as Mission[]);
+        }
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load dashboard data",
+          variant: "destructive"
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [user, toast]);
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <Skeleton className="h-8 w-64" />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 space-y-6">
+            <Skeleton className="h-32" />
+            <Skeleton className="h-32" />
+          </div>
+          <div className="space-y-6">
+            <Skeleton className="h-32" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const firstName = profile?.first_name || 'Volunteer';
+  const xpPoints = profile?.xp_points || 0;
+  const level = profile?.level || 1;
 
   return (
     <div className="space-y-6">
       {/* Welcome Header */}
       <div className="space-y-2">
-        <h1 className="text-3xl font-bold text-foreground">Welcome back, Alex!</h1>
+        <h1 className="text-3xl font-bold text-foreground">Welcome back, {firstName}!</h1>
         <p className="text-muted-foreground">
           Ready to make a difference? Here are some missions that match your skills.
         </p>
@@ -67,129 +125,115 @@ const VolunteerDashboard = () => {
         <div className="lg:col-span-2 space-y-6">
           <div>
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold text-foreground">Recommended for You</h2>
-              <Button variant="outline" size="sm">
+              <h2 className="text-xl font-semibold">Recommended for You</h2>
+              <Button variant="outline" size="sm" onClick={() => window.location.href = '/missions'}>
                 View All Missions
               </Button>
             </div>
-            <div className="space-y-4">
-              {recommendedMissions.map((mission) => (
-                <MissionCard
-                  key={mission.id}
-                  {...mission}
-                  onViewDetails={handleViewDetails}
-                />
-              ))}
-            </div>
+            
+            {missions.length === 0 ? (
+              <Card>
+                <CardContent className="pt-6 text-center">
+                  <p className="text-muted-foreground mb-4">No missions available at the moment.</p>
+                  <Button onClick={() => window.location.href = '/missions'}>
+                    Explore All Missions
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-4">
+                {missions.map((mission) => (
+                  <Card key={mission.id}>
+                    <CardHeader>
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h3 className="font-semibold">{mission.title}</h3>
+                          <p className="text-sm text-muted-foreground">{mission.organizations?.name || 'Organization'}</p>
+                        </div>
+                        <Badge variant="outline">
+                          {mission.difficulty_level || 'Open'}
+                        </Badge>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-muted-foreground mb-4">{mission.description}</p>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                          <Clock className="h-4 w-4" />
+                          {mission.estimated_hours ? `${mission.estimated_hours} hours` : 'TBD'}
+                        </div>
+                        <Button size="sm" onClick={() => window.location.href = `/mission/${mission.id}`}>
+                          View Details
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Right Column - Stats & Active Missions */}
+        {/* Right Column - Stats & Progress */}
         <div className="space-y-6">
-          {/* Gamification Stats */}
-          <Card className="animate-fade-up">
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center space-x-2">
-                <Award className="w-5 h-5 text-primary" />
-                <span>Your Impact</span>
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Award className="h-5 w-5" />
+                ShieldMate Specialist
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="text-center">
-                <div className="rank-badge w-full justify-center mb-3">
-                  ShieldMate Specialist
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span>Level {level}</span>
+                  <span>{xpPoints} / {level * 2000} XP</span>
                 </div>
-                <div className="text-2xl font-bold text-foreground mb-1">Level 3</div>
-                <div className="text-sm text-muted-foreground mb-3">1,450 / 2,000 XP to next level</div>
-                <Progress value={72.5} className="h-2" />
+                <Progress value={(xpPoints / (level * 2000)) * 100} className="h-2" />
               </div>
               
-              <div className="grid grid-cols-2 gap-4 pt-4 border-t border-border">
+              <div className="grid grid-cols-2 gap-4 pt-4 border-t">
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-primary">5</div>
+                  <div className="text-2xl font-bold text-primary">0</div>
                   <div className="text-xs text-muted-foreground">Missions Completed</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-primary">12</div>
-                  <div className="text-xs text-muted-foreground">Organizations Helped</div>
+                  <div className="text-2xl font-bold text-primary">{xpPoints}</div>
+                  <div className="text-xs text-muted-foreground">Total XP</div>
                 </div>
-              </div>
-
-              <div className="flex flex-wrap gap-2 pt-2">
-                <Badge variant="secondary" className="text-xs">
-                  🛡️ Security Expert
-                </Badge>
-                <Badge variant="secondary" className="text-xs">
-                  ☁️ Cloud Specialist
-                </Badge>
-                <Badge variant="secondary" className="text-xs">
-                  ⚡ Quick Responder
-                </Badge>
               </div>
             </CardContent>
           </Card>
 
-          {/* Active Missions */}
-          <Card className="animate-fade-up" style={{ animationDelay: '0.1s' }}>
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center space-x-2">
-                <Target className="w-5 h-5 text-primary" />
-                <span>Active Missions</span>
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Target className="h-5 w-5" />
+                Quick Stats
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {activeMissions.map((mission) => (
-                <div key={mission.id} className="space-y-3">
-                  <div>
-                    <h4 className="font-medium text-foreground text-sm">{mission.title}</h4>
-                    <p className="text-xs text-muted-foreground">{mission.organisation}</p>
-                  </div>
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-xs">
-                      <span className="text-muted-foreground">Progress</span>
-                      <span className="text-foreground font-medium">{mission.progress}%</span>
-                    </div>
-                    <Progress value={mission.progress} className="h-1.5" />
-                  </div>
-                  <div className="flex items-center justify-between text-xs">
-                    <div className="flex items-center space-x-1 text-muted-foreground">
-                      <Clock className="w-3 h-3" />
-                      <span>{mission.deadline} left</span>
-                    </div>
-                    <Button variant="outline" size="sm" className="h-6 px-2 text-xs">
-                      Continue
-                    </Button>
-                  </div>
-                  {mission.id !== activeMissions[activeMissions.length - 1].id && (
-                    <div className="border-b border-border" />
-                  )}
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-
-          {/* Quick Stats */}
-          <Card className="animate-fade-up" style={{ animationDelay: '0.2s' }}>
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center space-x-2">
-                <TrendingUp className="w-5 h-5 text-primary" />
-                <span>This Month</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
               <div className="space-y-3">
-                <div className="flex justify-between">
-                  <span className="text-sm text-muted-foreground">Applications Sent</span>
-                  <span className="text-sm font-medium text-foreground">3</span>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-muted-foreground">Active Applications</span>
+                  <Badge variant="outline">0</Badge>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-muted-foreground">Hours Contributed</span>
-                  <span className="text-sm font-medium text-foreground">24</span>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-muted-foreground">Profile Completion</span>
+                  <Badge variant="outline">
+                    {profile?.first_name && profile?.last_name ? '80%' : '40%'}
+                  </Badge>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-muted-foreground">XP Earned</span>
-                  <span className="text-sm font-medium text-primary">450</span>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-muted-foreground">Skills Verified</span>
+                  <Badge variant="outline">0</Badge>
                 </div>
+              </div>
+              
+              <div className="pt-4 border-t">
+                <Button size="sm" variant="outline" className="w-full" onClick={() => window.location.href = '/profile'}>
+                  Complete Profile
+                </Button>
               </div>
             </CardContent>
           </Card>

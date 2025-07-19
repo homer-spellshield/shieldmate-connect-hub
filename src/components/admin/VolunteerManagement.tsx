@@ -69,7 +69,7 @@ export const VolunteerManagement = () => {
         // Get auth users data
         const volunteersData = profiles?.map(profile => ({
           id: profile.user_id,
-          email: 'volunteer@example.com', // We can't fetch email from auth.users
+          email: 'Email not available', // We can't fetch email from auth.users via client
           first_name: profile.first_name || '',
           last_name: profile.last_name || '',
           bio: profile.bio,
