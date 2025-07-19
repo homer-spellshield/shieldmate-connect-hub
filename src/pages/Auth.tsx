@@ -10,7 +10,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Shield } from 'lucide-react';
+import { Shield, ExternalLink } from 'lucide-react';
 
 const signInSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
@@ -33,6 +33,9 @@ const signUpSchema = z.object({
 
 type SignInForm = z.infer<typeof signInSchema>;
 type SignUpForm = z.infer<typeof signUpSchema>;
+
+// This is the correct link for the volunteer Google Form.
+const VOLUNTEER_SIGNUP_URL = "https://docs.google.com/forms/d/e/1FAIpQLScE-gGwsYUR7qvwQZvi8ER4UVomquwVyFnha4s8d05m5_mErw/viewform?usp=sharing&ouid=103728325953907502630";
 
 const Auth = () => {
   const { signIn, signUp, user } = useAuth();
@@ -95,14 +98,15 @@ const Auth = () => {
           <CardHeader>
             <CardTitle>Welcome to ShieldMate</CardTitle>
             <CardDescription>
-              Login or register your organization to get started.
+              Sign in or register to get started.
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="grid w-full grid-cols-2">
+              <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="signin">Sign In</TabsTrigger>
-                <TabsTrigger value="signup">Organization Signup</TabsTrigger>
+                <TabsTrigger value="signup">Register Org</TabsTrigger>
+                <TabsTrigger value="volunteer">Volunteer</TabsTrigger>
               </TabsList>
 
               <TabsContent value="signin" className="pt-4">
@@ -195,6 +199,24 @@ const Auth = () => {
                     </Button>
                   </form>
                 </Form>
+              </TabsContent>
+
+              <TabsContent value="volunteer" className="pt-4">
+                <div className="text-center space-y-4">
+                    <h3 className="font-semibold">Interested in Volunteering?</h3>
+                    <p className="text-sm text-muted-foreground">
+                        We're excited to have you! Our volunteer onboarding is handled externally to ensure a thorough vetting process. Please click the button below to start your application.
+                    </p>
+                    <Button 
+                        asChild 
+                        className="w-full"
+                    >
+                        <a href={VOLUNTEER_SIGNUP_URL} target="_blank" rel="noopener noreferrer">
+                            Go to Volunteer Application
+                            <ExternalLink className="ml-2 h-4 w-4" />
+                        </a>
+                    </Button>
+                </div>
               </TabsContent>
             </Tabs>
           </CardContent>
