@@ -1,39 +1,14 @@
--- Insert the super admin user directly (this approach bypasses the auth.users conflict issue)
--- First, let's create the auth user record
-WITH new_user AS (
-  INSERT INTO auth.users (
-    id,
-    instance_id,
-    email,
-    encrypted_password,
-    email_confirmed_at,
-    created_at,
-    updated_at,
-    raw_app_meta_data,
-    raw_user_meta_data,
-    is_super_admin,
-    role
-  ) VALUES (
-    gen_random_uuid(),
-    '00000000-0000-0000-0000-000000000000',
-    'homerf@spellshield.com.au',
-    crypt('9tZHY!ChXD5X7^b6eMPh', gen_salt('bf')),
-    now(),
-    now(),
-    now(),
-    '{"provider": "email", "providers": ["email"]}',
-    '{"first_name": "Homer", "last_name": "Frias"}',
-    false,
-    'authenticated'
-  )
-  RETURNING id, email
-)
--- Now create the profile and assign the super_admin role
-INSERT INTO public.profiles (user_id, first_name, last_name)
-SELECT id, 'Homer', 'Frias' FROM new_user;
+-- This migration file has been intentionally cleared to remove hardcoded credentials.
+-- The initial super admin user should be created manually through the Supabase dashboard
+-- or via a secure, one-time script using environment variables for passwords.
 
--- Assign super_admin role
-INSERT INTO public.user_roles (user_id, role)
-SELECT id, 'super_admin' FROM (
-  SELECT id FROM auth.users WHERE email = 'homerf@spellshield.com.au'
-) AS admin_user;
+-- Instructions for manual super admin creation:
+-- 1. Go to your Supabase Project Dashboard.
+-- 2. Navigate to "Authentication" -> "Users".
+-- 3. Click "Create user" and create your admin user.
+-- 4. Navigate to "Table Editor" -> "user_roles" table.
+-- 5. Click "Insert row", add the new user's ID, and set the role to "super_admin".
+
+-- This manual process ensures your admin credentials are never committed to the codebase.
+
+SELECT 'Migration intentionally cleared for security reasons.';

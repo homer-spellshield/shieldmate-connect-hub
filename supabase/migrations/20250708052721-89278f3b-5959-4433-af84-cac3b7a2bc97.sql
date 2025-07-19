@@ -1,27 +1,14 @@
--- Set up super admin for homerf@spellshield.com.au
--- First, try to find if user already exists and update their role
-DO $$
-DECLARE
-    target_user_id uuid;
-BEGIN
-    -- Try to find user by email in auth.users (if they already signed up)
-    SELECT id INTO target_user_id 
-    FROM auth.users 
-    WHERE email = 'homerf@spellshield.com.au';
-    
-    IF target_user_id IS NOT NULL THEN
-        -- User exists, ensure they have super_admin role
-        INSERT INTO public.user_roles (user_id, role)
-        VALUES (target_user_id, 'super_admin')
-        ON CONFLICT (user_id, role) DO NOTHING;
-        
-        -- Ensure they have a profile
-        INSERT INTO public.profiles (user_id, first_name, last_name)
-        VALUES (target_user_id, 'Homer', 'F')
-        ON CONFLICT (user_id) DO NOTHING;
-        
-        RAISE NOTICE 'Super admin role assigned to existing user: homerf@spellshield.com.au';
-    ELSE
-        RAISE NOTICE 'User homerf@spellshield.com.au not found. They need to sign up first, then this migration can be re-run.';
-    END IF;
-END $$;
+-- This migration file has been intentionally cleared to remove hardcoded credentials.
+-- The initial super admin user should be created manually through the Supabase dashboard
+-- or via a secure, one-time script using environment variables for passwords.
+
+-- Instructions for manual super admin creation:
+-- 1. Go to your Supabase Project Dashboard.
+-- 2. Navigate to "Authentication" -> "Users".
+-- 3. Click "Create user" and create your admin user.
+-- 4. Navigate to "Table Editor" -> "user_roles" table.
+-- 5. Click "Insert row", add the new user's ID, and set the role to "super_admin".
+
+-- This manual process ensures your admin credentials are never committed to the codebase.
+
+SELECT 'Migration intentionally cleared for security reasons.';

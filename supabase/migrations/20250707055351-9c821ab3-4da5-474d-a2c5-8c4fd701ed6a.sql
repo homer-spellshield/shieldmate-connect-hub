@@ -20,49 +20,9 @@ ALTER COLUMN availability TYPE availability_type USING availability::availabilit
 -- Set defaults after converting to enum types
 ALTER TABLE public.profiles ALTER COLUMN status SET DEFAULT 'active'::volunteer_status;
 
--- Create first Super Admin user
-INSERT INTO auth.users (
-  id,
-  instance_id,
-  email,
-  encrypted_password,
-  email_confirmed_at,
-  created_at,
-  updated_at,
-  raw_app_meta_data,
-  raw_user_meta_data,
-  is_super_admin,
-  role
-) VALUES (
-  gen_random_uuid(),
-  '00000000-0000-0000-0000-000000000000',
-  'homerf@spellshield.com.au',
-  crypt('9tZHY!ChXD5X7^b6eMPh', gen_salt('bf')),
-  now(),
-  now(),
-  now(),
-  '{"provider": "email", "providers": ["email"]}',
-  '{"first_name": "Homer", "last_name": "Frias"}',
-  false,
-  'authenticated'
-) ON CONFLICT (email) DO NOTHING;
+-- Super admin user creation intentionally removed for security.
+-- Create super admin manually through Supabase dashboard:
+-- 1. Go to Authentication -> Users -> Create user
+-- 2. Then go to Table Editor -> user_roles -> Insert row with role "super_admin"
 
--- Get the user ID and create profile + super_admin role
-DO $$
-DECLARE
-    admin_user_id uuid;
-BEGIN
-    SELECT id INTO admin_user_id FROM auth.users WHERE email = 'homerf@spellshield.com.au';
-    
-    IF admin_user_id IS NOT NULL THEN
-        -- Create profile
-        INSERT INTO public.profiles (user_id, first_name, last_name)
-        VALUES (admin_user_id, 'Homer', 'Frias')
-        ON CONFLICT (user_id) DO NOTHING;
-        
-        -- Assign super_admin role
-        INSERT INTO public.user_roles (user_id, role)
-        VALUES (admin_user_id, 'super_admin')
-        ON CONFLICT (user_id, role) DO NOTHING;
-    END IF;
-END $$;
+SELECT 'Super admin creation removed for security - create manually via dashboard.';
