@@ -61,44 +61,55 @@ const CreateMission = () => {
 
   useEffect(() => {
     const fetchData = async () => {
-      if (!user) return;
+      if (!user) {
+        // Wait for the user object to be available
+        return;
+      }
       try {
         setLoading(true);
-        // Fetch Templates
+        
+        // --- Step 1: Fetch Mission Templates ---
         const { data: templatesData, error: templatesError } = await supabase
           .from('mission_templates')
           .select('id, title, description, estimated_hours, difficulty_level')
           .order('title');
 
         if (templatesError) {
-          console.error("Error fetching templates:", templatesError);
-          throw new Error("Could not fetch mission templates. Please check your network or RLS policies.");
+          console.error("Error fetching mission templates:", templatesError);
+          throw new Error("Failed to load mission templates. Please try again.");
         }
         setTemplates(templatesData || []);
 
-        // Fetch the user's organization with better error handling
-        const { data: orgMemberData, error: orgError } = await supabase
+        // --- Step 2: Fetch the User's Organization ID ---
+        const { data: orgMemberData, error: orgMemberError } = await supabase
           .from('organization_members')
-          .select(`
-            organization_id,
-            organizations!inner (
-              id,
-              name
-            )
-          `)
+          .select('organization_id')
           .eq('user_id', user.id)
-          .maybeSingle();
+          .limit(1);
 
-        if (orgError) {
-          console.error("Error fetching organization:", orgError);
+        if (orgMemberError) {
+          console.error("Error fetching organization membership:", orgMemberError);
           throw new Error("Could not find an organization for your account.");
         }
-        
-        if (orgMemberData && orgMemberData.organizations) {
-            setUserOrganization(orgMemberData.organizations as Organization);
-        } else {
-            throw new Error("Your account is not associated with any organization.");
+        if (!orgMemberData || orgMemberData.length === 0) {
+          throw new Error("Your account is not associated with any organization.");
         }
+        
+        const orgId = orgMemberData[0].organization_id;
+
+        // --- Step 3: Fetch the Organization Details using the ID ---
+        const { data: orgData, error: orgDataError } = await supabase
+          .from('organizations')
+          .select('id, name')
+          .eq('id', orgId)
+          .single();
+        
+        if (orgDataError) {
+            console.error("Error fetching organization details:", orgDataError);
+            throw new Error("Could not load details for your organization.");
+        }
+
+        setUserOrganization(orgData as Organization);
 
       } catch (error: any) {
         toast({
