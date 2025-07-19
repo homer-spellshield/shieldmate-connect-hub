@@ -39,29 +39,64 @@ const Applications = () => {
     if (!user) return;
 
     try {
-      const { data, error } = await supabase
+      // Fetch applications first
+      const { data: applicationData, error: appError } = await supabase
         .from('mission_applications')
-        .select(`
-          id,
-          status,
-          applied_at,
-          application_message,
-          missions (
-            id,
-            title,
-            description,
-            difficulty_level,
-            estimated_hours,
-            organizations (
-              name
-            )
-          )
-        `)
+        .select('id, status, applied_at, application_message, mission_id')
         .eq('volunteer_id', user.id)
         .order('applied_at', { ascending: false });
 
-      if (error) throw error;
-      setApplications(data || []);
+      if (appError) throw appError;
+
+      if (!applicationData || applicationData.length === 0) {
+        setApplications([]);
+        return;
+      }
+
+      // Get unique mission IDs
+      const missionIds = [...new Set(applicationData.map(app => app.mission_id))];
+
+      // Fetch mission details
+      const { data: missionData, error: missionError } = await supabase
+        .from('missions')
+        .select('id, title, description, difficulty_level, estimated_hours, organization_id')
+        .in('id', missionIds);
+
+      if (missionError) throw missionError;
+
+      // Get unique organization IDs
+      const orgIds = [...new Set(missionData?.map(mission => mission.organization_id) || [])];
+
+      // Fetch organization details
+      const { data: orgData, error: orgError } = await supabase
+        .from('organizations')
+        .select('id, name')
+        .in('id', orgIds);
+
+      if (orgError) throw orgError;
+
+      // Combine the data
+      const combinedData = applicationData.map(app => {
+        const mission = missionData?.find(m => m.id === app.mission_id);
+        const organization = orgData?.find(o => o.id === mission?.organization_id);
+        
+        return {
+          ...app,
+          missions: mission ? {
+            ...mission,
+            organizations: organization || { name: 'Unknown Organization' }
+          } : {
+            id: '',
+            title: 'Unknown Mission',
+            description: '',
+            difficulty_level: null,
+            estimated_hours: null,
+            organizations: { name: 'Unknown Organization' }
+          }
+        };
+      });
+
+      setApplications(combinedData);
     } catch (error) {
       console.error('Error fetching applications:', error);
       toast({
