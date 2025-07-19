@@ -39,15 +39,19 @@ const VolunteerDashboard = () => {
       if (!user) return;
 
       try {
-        // Fetch user profile
+        // Fetch user profile with basic fields only
         const { data: profileData } = await supabase
           .from('profiles')
-          .select('first_name, last_name, xp_points, level')
+          .select('first_name, last_name')
           .eq('user_id', user.id)
-          .single();
+          .maybeSingle();
 
         if (profileData) {
-          setProfile(profileData);
+          setProfile({
+            ...profileData,
+            xp_points: 0,
+            level: 1
+          });
         }
 
         // Fetch available missions manually to avoid relationship issues
