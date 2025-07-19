@@ -1,73 +1,136 @@
-# Welcome to your Lovable project
 
-## Project info
+# ShieldMate Connect Hub
 
-**URL**: https://lovable.dev/projects/bc9ae80b-3dbd-4b72-9d5a-8b76a4144634
+A comprehensive platform connecting emergency services organizations with volunteers for mission-critical operations.
 
-## How can I edit this code?
+## About
 
-There are several ways of editing your application.
+ShieldMate Connect Hub is a web application designed to bridge the gap between emergency services organizations and skilled volunteers. The platform enables organizations to post missions, manage applications, and coordinate with volunteers who have the necessary skills and availability for emergency response operations.
 
-**Use Lovable**
+## Features
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/bc9ae80b-3dbd-4b72-9d5a-8b76a4144634) and start prompting.
+- **Mission Management**: Organizations can create, edit, and manage emergency missions
+- **Volunteer Matching**: Smart matching system based on skills and availability
+- **Application System**: Streamlined application process for volunteers
+- **Role-Based Access**: Different interfaces for volunteers, organizations, and administrators
+- **Real-time Updates**: Live updates on mission status and applications
+- **Skill Verification**: System for verifying and managing volunteer skills
 
-Changes made via Lovable will be committed automatically to this repo.
+## Technology Stack
 
-**Use your preferred IDE**
+This project is built with modern web technologies:
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+- **Frontend**: React 18 with TypeScript
+- **Build Tool**: Vite
+- **Styling**: Tailwind CSS
+- **UI Components**: shadcn/ui component library
+- **Backend**: Supabase (Database, Authentication, Real-time)
+- **State Management**: TanStack React Query
+- **Routing**: React Router DOM
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+## Getting Started
 
-Follow these steps:
+### Prerequisites
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+- Node.js (version 16 or higher)
+- npm or yarn package manager
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+### Local Development
 
-# Step 3: Install the necessary dependencies.
-npm i
+1. **Clone the repository**
+   ```sh
+   git clone <repository-url>
+   cd shieldmate-connect-hub
+   ```
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+2. **Install dependencies**
+   ```sh
+   npm install
+   ```
+
+3. **Environment Setup**
+   
+   Create a `.env.local` file in the root directory with your Supabase configuration:
+   ```
+   VITE_SUPABASE_URL=your_supabase_project_url
+   VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+   ```
+
+4. **Start the development server**
+   ```sh
+   npm run dev
+   ```
+
+   The application will be available at `http://localhost:5173`
+
+### Database Setup
+
+This project uses Supabase as the backend. You'll need to:
+
+1. Create a new Supabase project
+2. Run the provided SQL migrations in the `supabase/migrations/` directory
+3. Configure Row Level Security (RLS) policies as defined in the migration files
+4. Set up authentication providers as needed
+
+## Project Structure
+
+```
+src/
+├── components/          # Reusable UI components
+├── pages/              # Page components and routes
+├── hooks/              # Custom React hooks
+├── integrations/       # External service integrations
+├── lib/               # Utility functions and configurations
+└── types/             # TypeScript type definitions
+
+supabase/
+├── migrations/        # Database migration files
+└── functions/         # Edge functions
 ```
 
-**Edit a file directly in GitHub**
+## User Roles
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+The platform supports three main user roles:
 
-**Use GitHub Codespaces**
+- **Volunteers**: Browse and apply for missions, manage their skills and availability
+- **Organizations**: Create missions, review applications, manage team members
+- **Administrators**: System-wide management, user verification, platform oversight
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## Deployment
 
-## What technologies are used for this project?
+### Build for Production
 
-This project is built with:
+```sh
+npm run build
+```
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+The built files will be in the `dist/` directory, ready for deployment to any static hosting service.
 
-## How can I deploy this project?
+### Deployment Options
 
-Simply open [Lovable](https://lovable.dev/projects/bc9ae80b-3dbd-4b72-9d5a-8b76a4144634) and click on Share -> Publish.
+- **Vercel**: Connect your repository for automatic deployments
+- **Netlify**: Deploy via Git integration or manual upload
+- **Static Hosting**: Upload the `dist/` folder to any web server
+- **Supabase Hosting**: Use Supabase's built-in hosting features
 
-## Can I connect a custom domain to my Lovable project?
+## Contributing
 
-Yes, you can!
+We welcome contributions to improve ShieldMate Connect Hub! Please follow these steps:
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Support
+
+For questions, issues, or feature requests, please open an issue in the repository or contact the development team.
+
+---
+
+Built with ❤️ for emergency services and volunteer communities.
