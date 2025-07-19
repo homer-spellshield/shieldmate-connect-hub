@@ -77,13 +77,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     // This effect runs ONLY ONCE on app mount to set up the auth listener.
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
         setSession(session);
         const currentUser = session?.user ?? null;
         setUser(currentUser);
 
         if (currentUser) {
-          await fetchProfileAndRoles(currentUser);
+          // Use setTimeout to defer Supabase calls and prevent infinite recursion
+          setTimeout(() => {
+            fetchProfileAndRoles(currentUser);
+          }, 0);
         } else {
           // Clear profile data on logout
           setProfile(null);
