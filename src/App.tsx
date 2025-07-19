@@ -15,6 +15,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 import AdminLogin from "./pages/AdminLogin";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
+import TeamManagement from "./pages/TeamManagement"; // 1. Import the new page
 
 const queryClient = new QueryClient();
 
@@ -55,6 +56,12 @@ const App = () => {
                     <Route path="/org-dashboard/missions/new" element={
                       <ProtectedRoute requiredRoles={['organization_owner', 'team_member']}>
                         <CreateMission />
+                      </ProtectedRoute>
+                    } />
+                    {/* 2. Add the new route for Team Management */}
+                    <Route path="/team" element={
+                      <ProtectedRoute requiredRoles={['organization_owner', 'team_member']}>
+                        <TeamManagement />
                       </ProtectedRoute>
                     } />
                     <Route path="/profile" element={
