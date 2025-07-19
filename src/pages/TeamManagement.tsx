@@ -1,4 +1,7 @@
 import { useState, useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Plus, MoreHorizontal } from "lucide-react";
@@ -14,7 +17,29 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
+
+// Schema for the invitation form
+const inviteSchema = z.object({
+  email: z.string().email("Please enter a valid email address."),
+  role: z.enum(['member', 'owner'], { required_error: "Please select a role." }),
+});
+type InviteForm = z.infer<typeof inviteSchema>;
+
+// Updated type to fetch email from profiles table
 type TeamMember = {
   id: string;
   role: string;
@@ -23,9 +48,7 @@ type TeamMember = {
     first_name: string | null;
     last_name: string | null;
     avatar_url: string | null;
-  } | null;
-  users: {
-    email: string | undefined;
+    email: string | null; // Added email here
   } | null;
 };
 
@@ -34,76 +57,105 @@ const TeamManagement = () => {
   const { toast } = useToast();
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
-  const [organizationName, setOrganizationName] = useState('');
+  const [organization, setOrganization] = useState<{ id: string, name: string } | null>(null);
+  const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
+
+  const form = useForm<InviteForm>({
+    resolver: zodResolver(inviteSchema),
+    defaultValues: {
+      email: '',
+      role: 'member',
+    },
+  });
+
+  const fetchTeamMembers = async () => {
+    if (!user) return;
+    try {
+      setLoading(true);
+      const { data: orgMemberData, error: orgMemberError } = await supabase
+        .from('organization_members')
+        .select('organization_id, organizations(id, name)')
+        .eq('user_id', user.id)
+        .single();
+
+      if (orgMemberError || !orgMemberData) throw orgMemberError || new Error("Organization not found.");
+      
+      const org = orgMemberData.organizations as { id: string, name: string };
+      setOrganization(org);
+
+      const { data: membersData, error: membersError } = await supabase
+        .from('organization_members')
+        .select(`
+          id,
+          role,
+          user_id,
+          profiles (
+            first_name,
+            last_name,
+            avatar_url,
+            email
+          )
+        `)
+        .eq('organization_id', org.id);
+
+      if (membersError) throw membersError;
+      setTeamMembers(membersData as TeamMember[]);
+    } catch (error: any) {
+      toast({
+        title: "Error fetching team members",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchTeamMembers = async () => {
-      if (!user || !profile) return;
-
-      try {
-        setLoading(true);
-
-        // First, get the user's organization ID from the organization_members table
-        const { data: orgMemberData, error: orgMemberError } = await supabase
-          .from('organization_members')
-          .select('organization_id, organizations(name)')
-          .eq('user_id', user.id)
-          .single();
-
-        if (orgMemberError || !orgMemberData) {
-          throw orgMemberError || new Error("Organization not found for current user.");
-        }
-        
-        const orgId = orgMemberData.organization_id;
-        // @ts-ignore
-        setOrganizationName(orgMemberData.organizations.name);
-
-        // Now, fetch all members of that organization
-        const { data: membersData, error: membersError } = await supabase
-          .from('organization_members')
-          .select(`
-            id,
-            role,
-            user_id,
-            profiles (
-              first_name,
-              last_name,
-              avatar_url
-            ),
-            users (
-              email
-            )
-          `)
-          .eq('organization_id', orgId);
-
-        if (membersError) throw membersError;
-
-        setTeamMembers(membersData as TeamMember[]);
-
-      } catch (error: any) {
-        toast({
-          title: "Error fetching team members",
-          description: error.message,
-          variant: "destructive",
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchTeamMembers();
-  }, [user, profile, toast]);
+  }, [user]);
+
+  const handleInviteMember = async (values: InviteForm) => {
+    if (!organization) return;
+  
+    // This will call a Supabase Edge Function we will create in the next step.
+    const { error } = await supabase.functions.invoke('invite-team-member', {
+      body: {
+        orgId: organization.id,
+        orgName: organization.name,
+        inviteeEmail: values.email,
+        inviteeRole: values.role,
+      },
+    });
+  
+    if (error) {
+      toast({
+        title: "Failed to send invitation",
+        description: error.message,
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Invitation Sent!",
+        description: `${values.email} has been invited to join your organization.`,
+      });
+      setIsInviteDialogOpen(false);
+      form.reset();
+    }
+  };
 
   const getInitials = (firstName: string | null, lastName: string | null) => {
     return `${firstName?.[0] || ''}${lastName?.[0] || ''}`.toUpperCase();
   };
+
+  const currentUserRole = teamMembers.find(m => m.user_id === user?.id)?.role;
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Team Management</h1>
         <p className="text-muted-foreground">
-          Invite and manage members of your organization, <span className="font-semibold text-primary">{organizationName}</span>.
+          Invite and manage members of your organization, <span className="font-semibold text-primary">{organization?.name}</span>.
         </p>
       </div>
 
@@ -116,10 +168,68 @@ const TeamManagement = () => {
                     The following users have access to this organization's dashboard.
                 </CardDescription>
             </div>
-            <Button>
-                <Plus className="h-4 w-4 mr-2" />
-                Invite Member
-            </Button>
+            <Dialog open={isInviteDialogOpen} onOpenChange={setIsInviteDialogOpen}>
+              <DialogTrigger asChild>
+                <Button disabled={currentUserRole !== 'owner'}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Invite Member
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Invite a new team member</DialogTitle>
+                  <DialogDescription>
+                    Enter the email address and select a role for the new member. They will receive an email to accept the invitation.
+                  </DialogDescription>
+                </DialogHeader>
+                <Form {...form}>
+                  <form onSubmit={form.handleSubmit(handleInviteMember)} className="space-y-4">
+                    <FormField
+                      control={form.control}
+                      name="email"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Email Address</FormLabel>
+                          <FormControl>
+                            <Input placeholder="new.member@company.com" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="role"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Role</FormLabel>
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select a role" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="member">Member</SelectItem>
+                              <SelectItem value="owner">Owner</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <DialogFooter>
+                      <DialogClose asChild>
+                        <Button type="button" variant="ghost">Cancel</Button>
+                      </DialogClose>
+                      <Button type="submit" disabled={form.formState.isSubmitting}>
+                        {form.formState.isSubmitting ? "Sending..." : "Send Invitation"}
+                      </Button>
+                    </DialogFooter>
+                  </form>
+                </Form>
+              </DialogContent>
+            </Dialog>
           </div>
         </CardHeader>
         <CardContent>
@@ -154,7 +264,7 @@ const TeamManagement = () => {
                         </div>
                       </TableCell>
                       <TableCell className="text-muted-foreground">
-                        {member.users?.email}
+                        {member.profiles?.email}
                       </TableCell>
                       <TableCell>
                         <Badge variant={member.role === 'owner' ? 'default' : 'secondary'} className="capitalize">
@@ -162,19 +272,21 @@ const TeamManagement = () => {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent>
-                            <DropdownMenuItem>Change Role</DropdownMenuItem>
-                            <DropdownMenuItem className="text-destructive">
-                              Remove Member
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                         {currentUserRole === 'owner' && user?.id !== member.user_id && (
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon">
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent>
+                                <DropdownMenuItem>Change Role</DropdownMenuItem>
+                                <DropdownMenuItem className="text-destructive">
+                                  Remove Member
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                         )}
                       </TableCell>
                     </TableRow>
                   ))
