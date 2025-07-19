@@ -36,7 +36,10 @@ const Applications = () => {
   }, [user]);
 
   const fetchApplications = async () => {
-    if (!user) return;
+    if (!user) {
+      setLoading(false);
+      return;
+    }
 
     try {
       // Fetch applications first
