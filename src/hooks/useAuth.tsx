@@ -1,8 +1,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from 'react';
-import { User, Session } from '@supabase/supabase-js';
+import { User, Session, PostgrestError } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { PostgrestError } from '@supabase/supabase-js';
 
 // List of disallowed free email providers for organization sign-up
 const freeEmailDomains = [
@@ -22,7 +21,7 @@ interface AuthContextType {
   session: Session | null;
   loading: boolean;
   signUp: (email: string, password: string, firstName: string, lastName: string, orgName: string, isAuthorized: boolean) => Promise<{ error: PostgrestError | Error | null }>;
-  signIn: (email: string, password: string) => Promise<{ error: PostgrestError | Error | null }>;
+  signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   profile: Profile | null;
   userRoles: string[];
@@ -51,6 +50,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [userRoles, setUserRoles] = useState<string[]>([]);
   const { toast } = useToast();
 
+  // useCallback ensures that fetchProfile function instance is stable across re-renders,
+  // preventing the infinite loop in the useEffect below.
   const fetchProfile = useCallback(async (userId: string) => {
     try {
       const { data: profileData, error: profileError } = await supabase
@@ -68,7 +69,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       
       if (rolesError) throw rolesError;
 
-      setProfile(profileData);
+      setProfile(profileData as Profile);
       setUserRoles(rolesData ? rolesData.map(r => r.role) : []);
     } catch (error) {
       console.error('Error fetching profile:', error);
@@ -85,13 +86,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   useEffect(() => {
     const getSessionAndProfile = async () => {
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      if (sessionError) {
-        console.error("Error getting session:", sessionError);
-        setLoading(false);
-        return;
-      }
-
+      const { data: { session } } = await supabase.auth.getSession();
       setSession(session);
       const currentUser = session?.user ?? null;
       setUser(currentUser);
@@ -116,11 +111,13 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           setProfile(null);
           setUserRoles([]);
         }
+        // Set loading to false after the auth state has been processed.
+        setLoading(false);
       }
     );
 
     return () => subscription.unsubscribe();
-  }, [fetchProfile]);
+  }, [fetchProfile]); // Now fetchProfile is a stable dependency.
 
   const signUp = async (email: string, password: string, firstName: string, lastName: string, orgName: string, isAuthorized: boolean) => {
     if (!isAuthorized) {
@@ -190,6 +187,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   const signOut = async () => {
     await supabase.auth.signOut();
+    setProfile(null);
+    setUserRoles([]);
+    setUser(null);
+    setSession(null);
     toast({ title: "Signed out", description: "You have been successfully signed out." });
   };
 
