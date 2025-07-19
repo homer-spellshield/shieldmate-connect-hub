@@ -63,14 +63,21 @@ const CreateMission = () => {
     const fetchData = async () => {
       if (!user) return;
       try {
+        setLoading(true);
+        // Fetch Templates
         const { data: templatesData, error: templatesError } = await supabase
           .from('mission_templates')
           .select('id, title, description, estimated_hours, difficulty_level')
           .order('title');
 
-        if (templatesError) throw templatesError;
+        if (templatesError) {
+          console.error("Error fetching templates:", templatesError);
+          throw new Error("Could not fetch mission templates. Please check your network or RLS policies.");
+        }
         setTemplates(templatesData || []);
 
+        // Fetch the user's first organization. Using .limit(1) instead of .single()
+        // prevents errors if a user belongs to multiple organizations.
         const { data: orgMemberData, error: orgError } = await supabase
           .from('organization_members')
           .select(`
@@ -81,15 +88,23 @@ const CreateMission = () => {
             )
           `)
           .eq('user_id', user.id)
-          .single();
+          .limit(1);
 
-        if (orgError) throw orgError;
+        if (orgError) {
+          console.error("Error fetching organization:", orgError);
+          throw new Error("Could not find an organization for your account.");
+        }
+        
+        if (orgMemberData && orgMemberData.length > 0) {
+            setUserOrganization(orgMemberData[0].organizations as Organization);
+        } else {
+            throw new Error("Your account is not associated with any organization.");
+        }
 
-        setUserOrganization(orgMemberData?.organizations as Organization);
       } catch (error: any) {
         toast({
-          title: 'Error',
-          description: 'Failed to load necessary data. Please try again.',
+          title: 'Error Loading Page',
+          description: error.message,
           variant: 'destructive',
         });
       } finally {
