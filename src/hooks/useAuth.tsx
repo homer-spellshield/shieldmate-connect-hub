@@ -3,31 +3,30 @@ import { User, Session, PostgrestError } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
-// List of disallowed free email providers for organization sign-up
+// --- CONSTANTS ---
 const freeEmailDomains = [
   'gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'aol.com', 'icloud.com', 'mail.com', 'gmx.com'
 ];
 
-// Define a more specific type for the user profile
+// --- TYPES ---
 interface Profile {
   user_id: string;
   first_name: string | null;
   last_name: string | null;
-  // Add other profile fields here as needed
 }
 
 interface AuthContextType {
   user: User | null;
   session: Session | null;
-  loading: boolean;
-  signUp: (email: string, password: string, firstName: string, lastName: string, orgName: string, isAuthorized: boolean) => Promise<{ error: PostgrestError | Error | null }>;
-  signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
-  signOut: () => Promise<void>;
   profile: Profile | null;
   userRoles: string[];
-  refetchProfile: () => Promise<void>;
+  loading: boolean;
+  signOut: () => Promise<void>;
+  signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
+  signUp: (email: string, password: string, firstName: string, lastName: string, orgName: string, isAuthorized: boolean) => Promise<{ error: PostgrestError | Error | null }>;
 }
 
+// --- CONTEXT ---
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const useAuth = () => {
@@ -38,117 +37,115 @@ export const useAuth = () => {
   return context;
 };
 
-interface AuthProviderProps {
-  children: ReactNode;
-}
-
-export const AuthProvider = ({ children }: AuthProviderProps) => {
+// --- PROVIDER COMPONENT ---
+export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [userRoles, setUserRoles] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true); // loading is true ONLY on initial app load
   const { toast } = useToast();
 
-  // useCallback ensures that fetchProfile function instance is stable across re-renders,
-  // preventing the infinite loop in the useEffect below.
-  const fetchProfile = useCallback(async (userId: string) => {
+  // --- DATA FETCHING ---
+  const fetchProfileAndRoles = useCallback(async (user: User) => {
     try {
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('*')
-        .eq('user_id', userId)
+        .eq('user_id', user.id)
         .single();
-
+      
       if (profileError) throw profileError;
+      setProfile(profileData as Profile);
 
       const { data: rolesData, error: rolesError } = await supabase
         .from('user_roles')
         .select('role')
-        .eq('user_id', userId);
+        .eq('user_id', user.id);
       
       if (rolesError) throw rolesError;
-
-      setProfile(profileData as Profile);
       setUserRoles(rolesData ? rolesData.map(r => r.role) : []);
     } catch (error) {
-      console.error('Error fetching profile:', error);
+      console.error("Error fetching user data:", error);
       setProfile(null);
       setUserRoles([]);
     }
   }, []);
 
-  const refetchProfile = useCallback(async () => {
-    if (user?.id) {
-      await fetchProfile(user.id);
-    }
-  }, [user, fetchProfile]);
-
+  // --- AUTH STATE LISTENER ---
   useEffect(() => {
-    const getSessionAndProfile = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setSession(session);
-      const currentUser = session?.user ?? null;
-      setUser(currentUser);
-
-      if (currentUser) {
-        await fetchProfile(currentUser.id);
-      }
-      setLoading(false);
-    };
-    
-    getSessionAndProfile();
-
+    // This effect runs ONLY ONCE on app mount to set up the auth listener.
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
+      async (event, session) => {
         setSession(session);
         const currentUser = session?.user ?? null;
         setUser(currentUser);
-        
+
         if (currentUser) {
-          await fetchProfile(currentUser.id);
+          await fetchProfileAndRoles(currentUser);
         } else {
+          // Clear profile data on logout
           setProfile(null);
           setUserRoles([]);
         }
-        // Set loading to false after the auth state has been processed.
         setLoading(false);
       }
     );
 
-    return () => subscription.unsubscribe();
-  }, [fetchProfile]); // Now fetchProfile is a stable dependency.
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [fetchProfileAndRoles]);
+
+  // --- AUTH ACTIONS ---
+  const signIn = async (email: string, password: string) => {
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) {
+      toast({ title: "Sign in failed", description: error.message, variant: "destructive" });
+    }
+    return { error };
+  };
+
+  const signOut = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+        toast({ title: "Sign out failed", description: error.message, variant: "destructive" });
+    } else {
+        // Explicitly clear state to ensure a clean logout
+        setUser(null);
+        setSession(null);
+        setProfile(null);
+        setUserRoles([]);
+        toast({ title: "Signed out", description: "You have been successfully signed out." });
+    }
+  };
 
   const signUp = async (email: string, password: string, firstName: string, lastName: string, orgName: string, isAuthorized: boolean) => {
+    // ... (rest of the signUp function remains the same as it was correct)
     if (!isAuthorized) {
       const error = new Error('You must confirm you are authorized to register this organization.');
       toast({ title: "Registration Failed", description: error.message, variant: "destructive" });
       return { error };
     }
-
     const emailDomain = email.split('@')[1];
     if (freeEmailDomains.includes(emailDomain)) {
       const error = new Error('Registration with free email providers is not allowed. Please use your organization email.');
       toast({ title: "Registration Failed", description: error.message, variant: "destructive" });
       return { error };
     }
-
     const { data: existingOrgs, error: domainCheckError } = await supabase
       .from('organizations')
       .select('id')
       .eq('domain', emailDomain);
-    
     if (domainCheckError) {
       toast({ title: "Registration Check Failed", description: "An error occurred while verifying your domain. Please try again.", variant: "destructive" });
       return { error: domainCheckError };
     }
-
     if (existingOrgs && existingOrgs.length > 0) {
       const error = new Error('An organization with this email domain already exists. Please contact an admin in your organization to be added.');
       toast({ title: "Registration Failed", description: error.message, variant: "destructive" });
       return { error };
     }
-
     const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
       email,
       password,
@@ -161,49 +158,31 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         },
       },
     });
-
     if (signUpError) {
       toast({ title: "Sign up failed", description: signUpError.message, variant: "destructive" });
       return { error: signUpError };
     }
-
     if (signUpData.user) {
       toast({
         title: "Check your email",
         description: "We've sent a confirmation link to complete your registration.",
       });
     }
-
     return { error: null };
-  };
-
-  const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) {
-      toast({ title: "Sign in failed", description: error.message, variant: "destructive" });
-    }
-    return { error };
-  };
-
-  const signOut = async () => {
-    await supabase.auth.signOut();
-    setProfile(null);
-    setUserRoles([]);
-    setUser(null);
-    setSession(null);
-    toast({ title: "Signed out", description: "You have been successfully signed out." });
   };
 
   const value = {
     user,
     session,
-    loading,
-    signUp,
-    signIn,
-    signOut,
     profile,
     userRoles,
-    refetchProfile,
+    loading,
+    signOut,
+    signIn,
+    signUp,
+    refetchProfile: useCallback(async () => {
+        if (user) await fetchProfileAndRoles(user);
+    }, [user, fetchProfileAndRoles]),
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
