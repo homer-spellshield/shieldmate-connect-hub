@@ -20,10 +20,11 @@ interface AuthContextType {
   session: Session | null;
   profile: Profile | null;
   userRoles: string[];
-  loading: boolean; // This is now the single source of truth for auth readiness
+  loading: boolean;
   signOut: () => Promise<void>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUp: (email: string, password: string, firstName: string, lastName: string, orgName: string, isAuthorized: boolean) => Promise<{ error: PostgrestError | Error | null }>;
+  refetchProfile: () => Promise<void>;
 }
 
 // --- CONTEXT ---
@@ -39,13 +40,14 @@ export const useAuth = () => {
 
 // --- PROVIDER COMPONENT ---
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [userRoles, setUserRoles] = useState<string[]>([]);
-  const [loading, setLoading] = useState(true); // Start true, set to false only when all data is loaded or no user
+  const [loading, setLoading] = useState(true); // loading is true ONLY on initial app load
   const { toast } = useToast();
 
+  // --- DATA FETCHING ---
   const fetchProfileAndRoles = useCallback(async (user: User) => {
     try {
       const { data: profileData, error: profileError } = await supabase
@@ -53,6 +55,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         .select('*')
         .eq('user_id', user.id)
         .single();
+      
       if (profileError) throw profileError;
       setProfile(profileData as Profile);
 
@@ -60,6 +63,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         .from('user_roles')
         .select('role')
         .eq('user_id', user.id);
+      
       if (rolesError) throw rolesError;
       setUserRoles(rolesData ? rolesData.map(r => r.role) : []);
     } catch (error) {
@@ -69,57 +73,35 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, []);
 
+  // --- AUTH STATE LISTENER ---
   useEffect(() => {
-    // This effect runs ONLY ONCE on app mount.
-    // It performs the initial check and sets up the listener.
-    const initializeAuth = async () => {
-      // 1. Get the initial session
-      const { data: { session: initialSession } } = await supabase.auth.getSession();
-      setSession(initialSession);
-      const currentUser = initialSession?.user ?? null;
-      setUser(currentUser);
+    // This effect runs ONLY ONCE on app mount to set up the auth listener.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setSession(session);
+        const currentUser = session?.user ?? null;
+        setUser(currentUser);
 
-      if (currentUser) {
-        await fetchProfileAndRoles(currentUser);
-      }
-      
-      // 2. Now that the initial state is set, we can say we are done loading.
-      setLoading(false);
-
-      // 3. Set up the listener for future auth changes (login/logout)
-      const { data: { subscription } } = supabase.auth.onAuthStateChange(
-        async (_event, session) => {
-          setSession(session);
-          const newCurrentUser = session?.user ?? null;
-          setUser(newCurrentUser);
-
-          if (newCurrentUser) {
-            await fetchProfileAndRoles(newCurrentUser);
-          } else {
-            setProfile(null);
-            setUserRoles([]);
-          }
+        if (currentUser) {
+          // Use setTimeout to defer Supabase calls and prevent infinite recursion
+          setTimeout(() => {
+            fetchProfileAndRoles(currentUser);
+          }, 0);
+        } else {
+          // Clear profile data on logout
+          setProfile(null);
+          setUserRoles([]);
         }
-      );
+        setLoading(false);
+      }
+    );
 
-      return () => {
-        subscription.unsubscribe();
-      };
-    };
-
-    const subscriptionPromise = initializeAuth();
-
-    // Cleanup function for the returned promise from initializeAuth
     return () => {
-        subscriptionPromise.then(cleanup => {
-            if (cleanup) {
-                const { data: { subscription } } = cleanup;
-                subscription.unsubscribe();
-            }
-        });
+      subscription.unsubscribe();
     };
   }, [fetchProfileAndRoles]);
 
+  // --- AUTH ACTIONS ---
   const signIn = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
@@ -129,11 +111,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
-    toast({ title: "Signed out", description: "You have been successfully signed out." });
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+        toast({ title: "Sign out failed", description: error.message, variant: "destructive" });
+    } else {
+        // Explicitly clear state to ensure a clean logout
+        setUser(null);
+        setSession(null);
+        setProfile(null);
+        setUserRoles([]);
+        toast({ title: "Signed out", description: "You have been successfully signed out." });
+    }
   };
 
   const signUp = async (email: string, password: string, firstName: string, lastName: string, orgName: string, isAuthorized: boolean) => {
+    // ... (rest of the signUp function remains the same as it was correct)
     if (!isAuthorized) {
       const error = new Error('You must confirm you are authorized to register this organization.');
       toast({ title: "Registration Failed", description: error.message, variant: "destructive" });

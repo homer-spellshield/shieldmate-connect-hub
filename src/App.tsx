@@ -1,3 +1,4 @@
+
 import { useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -18,12 +19,16 @@ import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import TeamManagement from "./pages/TeamManagement";
 import MissionControl from "./pages/MissionControl";
-import MyMissions from "./pages/MyMissions";
-import MissionApplications from "./pages/MissionApplications";
+import Applications from "./pages/Applications";
+import OrgMissions from "./pages/OrgMissions";
+import OrgProfile from "./pages/OrgProfile";
+import Settings from "./pages/Settings";
+import Help from "./pages/Help";
 
 const queryClient = new QueryClient();
 
 function App() {
+  // Set dark mode by default
   useEffect(() => {
     if (!document.documentElement.classList.contains('dark')) {
       document.documentElement.classList.add('dark');
@@ -43,21 +48,71 @@ function App() {
               <Route path="/*" element={
                 <Layout>
                   <Routes>
-                    <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
-                    <Route path="/missions" element={<ProtectedRoute><MissionDiscovery /></ProtectedRoute>} />
-                    <Route path="/org-dashboard" element={<ProtectedRoute requiredRoles={['organization_owner', 'team_member']}><OrganisationDashboard /></ProtectedRoute>} />
-                    <Route path="/org-dashboard/missions/new" element={<ProtectedRoute requiredRoles={['organization_owner', 'team_member']}><CreateMission /></ProtectedRoute>} />
-                    <Route path="/team" element={<ProtectedRoute requiredRoles={['organization_owner', 'team_member']}><TeamManagement /></ProtectedRoute>} />
-                    <Route path="/mission/:missionId" element={<ProtectedRoute requiredRoles={['organization_owner', 'team_member', 'volunteer']}><MissionControl /></ProtectedRoute>} />
-                    <Route path="/profile" element={<ProtectedRoute><VolunteerProfile /></ProtectedRoute>} />
-                    <Route path="/admin" element={<ProtectedRoute requiredRoles={['super_admin']}><AdminDashboard /></ProtectedRoute>} />
-                    
-                    {/* Routes for Organization's Missions and Applications */}
-                    <Route path="/org-missions" element={<ProtectedRoute requiredRoles={['organization_owner', 'team_member']}><MyMissions /></ProtectedRoute>} />
-                    <Route path="/org-missions/:missionId/applications" element={<ProtectedRoute requiredRoles={['organization_owner', 'team_member']}><MissionApplications /></ProtectedRoute>} />
-
-                    {/* NOTE: The route for /applications (for volunteers) is temporarily removed until the page is created. */}
-
+                    <Route path="/" element={
+                      <ProtectedRoute>
+                        <Index />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/missions" element={
+                      <ProtectedRoute>
+                        <MissionDiscovery />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/applications" element={
+                      <ProtectedRoute requiredRoles={['volunteer']}>
+                        <Applications />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/org-dashboard" element={
+                      <ProtectedRoute requiredRoles={['organization_owner', 'team_member']}>
+                        <OrganisationDashboard />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/org-dashboard/missions/new" element={
+                      <ProtectedRoute requiredRoles={['organization_owner', 'team_member']}>
+                        <CreateMission />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/org-missions" element={
+                      <ProtectedRoute requiredRoles={['organization_owner', 'team_member']}>
+                        <OrgMissions />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/org-profile" element={
+                      <ProtectedRoute requiredRoles={['organization_owner', 'team_member']}>
+                        <OrgProfile />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/team" element={
+                      <ProtectedRoute requiredRoles={['organization_owner', 'team_member']}>
+                        <TeamManagement />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/mission/:missionId" element={
+                      <ProtectedRoute requiredRoles={['organization_owner', 'team_member', 'volunteer']}>
+                        <MissionControl />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/profile" element={
+                      <ProtectedRoute>
+                        <VolunteerProfile />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/settings" element={
+                      <ProtectedRoute>
+                        <Settings />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/help" element={
+                      <ProtectedRoute>
+                        <Help />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/admin" element={
+                      <ProtectedRoute requiredRoles={['super_admin']}>
+                        <AdminDashboard />
+                      </ProtectedRoute>
+                    } />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </Layout>
