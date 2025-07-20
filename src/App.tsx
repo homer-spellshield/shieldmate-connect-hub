@@ -20,7 +20,6 @@ import TeamManagement from "./pages/TeamManagement";
 import MissionControl from "./pages/MissionControl";
 import MyMissions from "./pages/MyMissions";
 import MissionApplications from "./pages/MissionApplications";
-import MyApplications from "./pages/MyApplications"; // Import MyApplications
 
 const queryClient = new QueryClient();
 
@@ -53,11 +52,11 @@ function App() {
                     <Route path="/profile" element={<ProtectedRoute><VolunteerProfile /></ProtectedRoute>} />
                     <Route path="/admin" element={<ProtectedRoute requiredRoles={['super_admin']}><AdminDashboard /></ProtectedRoute>} />
                     
+                    {/* Routes for Organization's Missions and Applications */}
                     <Route path="/org-missions" element={<ProtectedRoute requiredRoles={['organization_owner', 'team_member']}><MyMissions /></ProtectedRoute>} />
                     <Route path="/org-missions/:missionId/applications" element={<ProtectedRoute requiredRoles={['organization_owner', 'team_member']}><MissionApplications /></ProtectedRoute>} />
-                    
-                    {/* ADDED: Route for Volunteer's Applications */}
-                    <Route path="/applications" element={<ProtectedRoute requiredRoles={['volunteer']}><MyApplications /></ProtectedRoute>} />
+
+                    {/* NOTE: The route for /applications (for volunteers) is temporarily removed until the page is created. */}
 
                     <Route path="*" element={<NotFound />} />
                   </Routes>
