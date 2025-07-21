@@ -75,7 +75,7 @@ const MyMissions = () => {
     switch (status) {
       case 'open': return 'secondary';
       case 'in_progress': return 'default';
-      case 'completed': return 'success';
+      case 'completed': return 'default';
       default: return 'outline';
     }
   };

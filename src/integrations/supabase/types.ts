@@ -45,7 +45,22 @@ export type Database = {
           updated_at?: string
           volunteer_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "mission_applications_mission_id_fkey"
+            columns: ["mission_id"]
+            isOneToOne: false
+            referencedRelation: "missions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mission_applications_volunteer_id_fkey"
+            columns: ["volunteer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
       }
       mission_template_skills: {
         Row: {

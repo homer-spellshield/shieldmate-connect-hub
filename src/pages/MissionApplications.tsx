@@ -53,7 +53,7 @@ const MissionApplications = () => {
             application_message,
             applied_at,
             status,
-            profiles ( first_name, last_name, bio )
+            profiles!mission_applications_volunteer_id_fkey ( first_name, last_name, bio )
           `)
           .eq('mission_id', missionId);
 
