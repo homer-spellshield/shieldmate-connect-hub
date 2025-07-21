@@ -65,14 +65,6 @@ type MissionDetails = {
   } | null;
 };
 
-// A simple function to generate a consistent operation name
-const generateOperationName = (missionId: string) => {
-    const names = ["Wombat", "Fortify", "Blizzard", "Eagle", "Phoenix", "Anchor", "Compass", "Summit", "Velocity"];
-    const hash = missionId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-    return `Operation ${names[hash % names.length]}`;
-};
-
-
 const MissionControl = () => {
     const { missionId } = useParams<{ missionId: string }>();
     const navigate = useNavigate();
@@ -247,7 +239,6 @@ const MissionControl = () => {
     return (
         <div className="space-y-6">
             <div>
-                <h2 className="text-sm font-semibold text-primary">{generateOperationName(mission.id)}</h2>
                 <h1 className="text-3xl font-bold tracking-tight">{mission.title}</h1>
                 <div className="flex items-center space-x-2 text-muted-foreground mt-1">
                     <Briefcase className="h-4 w-4" />
