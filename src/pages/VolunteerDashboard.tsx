@@ -28,8 +28,8 @@ interface ActiveMission {
 interface Profile {
   first_name: string | null;
   last_name: string | null;
-  xp_points: number | null;
-  level: number | null;
+  xp_points?: number | null;
+  level?: number | null;
 }
 
 // Function to calculate XP needed for the next level
@@ -56,7 +56,12 @@ const VolunteerDashboard = () => {
       try {
         setLoading(true);
         
-        setProfile(authProfile as Profile);
+        setProfile(authProfile ? {
+          first_name: authProfile.first_name,
+          last_name: authProfile.last_name,
+          xp_points: (authProfile as any).xp_points || 0,
+          level: (authProfile as any).level || 1
+        } : null);
 
         const { data: missionsData, error: missionsError } = await supabase
           .from('missions')
