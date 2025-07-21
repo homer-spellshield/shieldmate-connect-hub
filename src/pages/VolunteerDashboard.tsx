@@ -53,7 +53,7 @@ const VolunteerDashboard = () => {
         setLoading(true);
         
         // Use the profile from the auth context
-        setProfile(authProfile as Profile);
+        setProfile(authProfile as any);
 
         // Fetch available missions
         const { data: missionsData, error: missionsError } = await supabase

@@ -47,6 +47,7 @@ const OrgMissions = () => {
 
       // Then get missions for that organization
       const { data: missionsData, error: missionsError } = await supabase
+        .from('missions')
         .select(`
           id,
           title,
@@ -56,7 +57,6 @@ const OrgMissions = () => {
           estimated_hours,
           created_at
         `)
-        .from('missions')
         .eq('organization_id', memberData.organization_id)
         .order('created_at', { ascending: false });
 

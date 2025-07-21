@@ -106,7 +106,7 @@ const MissionControl = () => {
                 setMission(missionData as any);
                 
                 // Fetch initial chat messages
-                const { data: messagesData, error: messagesError } = await supabase
+                const { data: messagesData, error: messagesError } = await (supabase as any)
                     .from('mission_messages')
                     .select('*, profiles ( first_name, last_name )')
                     .eq('mission_id', missionId)
@@ -116,7 +116,7 @@ const MissionControl = () => {
                 setMessages(messagesData as any || []);
 
                 // Fetch initial files
-                const { data: filesData, error: filesError } = await supabase
+                const { data: filesData, error: filesError } = await (supabase as any)
                     .from('mission_files')
                     .select('*, profiles ( first_name, last_name )')
                     .eq('mission_id', missionId)
@@ -151,7 +151,7 @@ const MissionControl = () => {
         const fileChannel = supabase.channel(`mission-files:${missionId}`)
           .on('postgres_changes', { event: '*', schema: 'public', table: 'mission_files', filter: `mission_id=eq.${missionId}`}, 
             async () => {
-              const { data: filesData } = await supabase.from('mission_files').select('*, profiles (first_name, last_name)').eq('mission_id', missionId).order('created_at', { ascending: false });
+              const { data: filesData } = await (supabase as any).from('mission_files').select('*, profiles (first_name, last_name)').eq('mission_id', missionId).order('created_at', { ascending: false });
               setMissionFiles(filesData as any || []);
             }
           )
@@ -175,7 +175,7 @@ const MissionControl = () => {
         const content = newMessage;
         setNewMessage("");
 
-        const { error } = await supabase.from('mission_messages').insert({
+        const { error } = await (supabase as any).from('mission_messages').insert({
             mission_id: missionId,
             user_id: user.id,
             content: content,
@@ -201,7 +201,7 @@ const MissionControl = () => {
 
             if (uploadError) throw uploadError;
 
-            const { error: dbError } = await supabase.from('mission_files').insert({
+            const { error: dbError } = await (supabase as any).from('mission_files').insert({
                 mission_id: missionId,
                 user_id: user.id,
                 file_name: file.name,
@@ -229,7 +229,7 @@ const MissionControl = () => {
             const { error: storageError } = await supabase.storage.from('mission-files').remove([file.file_path]);
             if (storageError) throw storageError;
 
-            const { error: dbError } = await supabase.from('mission_files').delete().eq('id', file.id);
+            const { error: dbError } = await (supabase as any).from('mission_files').delete().eq('id', file.id);
             if (dbError) throw dbError;
 
             toast({ title: "File Deleted", description: `${file.file_name} has been removed.` });
