@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -7,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Clock, MapPin, Calendar } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useNavigate } from 'react-router-dom';
 
 interface Application {
   id: string;
@@ -28,6 +28,7 @@ interface Application {
 const Applications = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -99,7 +100,7 @@ const Applications = () => {
         };
       });
 
-      setApplications(combinedData);
+      setApplications(combinedData as Application[]);
     } catch (error) {
       console.error('Error fetching applications:', error);
       toast({
@@ -114,7 +115,7 @@ const Applications = () => {
 
   const getStatusBadgeVariant = (status: string) => {
     switch (status) {
-      case 'approved': return 'default';
+      case 'accepted': return 'default';
       case 'rejected': return 'destructive';
       case 'pending': return 'secondary';
       default: return 'outline';
@@ -146,9 +147,7 @@ const Applications = () => {
               <p className="text-muted-foreground mb-4">
                 You haven't applied to any missions yet. Start exploring available missions!
               </p>
-              <Button asChild>
-                <a href="/missions">Discover Missions</a>
-              </Button>
+              <Button onClick={() => navigate('/missions')}>Discover Missions</Button>
             </div>
           </CardContent>
         </Card>
@@ -200,12 +199,10 @@ const Applications = () => {
                   </div>
                 )}
 
-                {application.status === 'approved' && (
+                {application.status === 'accepted' && (
                   <div className="mt-4">
-                    <Button asChild>
-                      <a href={`/mission/${application.missions.id}`}>
-                        Access Mission Workspace
-                      </a>
+                    <Button onClick={() => navigate(`/mission/${application.missions.id}`)}>
+                      Access Mission Workspace
                     </Button>
                   </div>
                 )}
