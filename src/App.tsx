@@ -1,4 +1,3 @@
-
 import { useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -21,6 +20,7 @@ import TeamManagement from "./pages/TeamManagement";
 import MissionControl from "./pages/MissionControl";
 import Applications from "./pages/Applications";
 import OrgMissions from "./pages/OrgMissions";
+import MissionApplications from "./pages/MissionApplications";
 import OrgProfile from "./pages/OrgProfile";
 import Settings from "./pages/Settings";
 import Help from "./pages/Help";
@@ -76,6 +76,11 @@ function App() {
                     <Route path="/org-missions" element={
                       <ProtectedRoute requiredRoles={['organization_owner', 'team_member']}>
                         <OrgMissions />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/org-missions/:missionId/applications" element={
+                      <ProtectedRoute requiredRoles={['organization_owner', 'team_member']}>
+                        <MissionApplications />
                       </ProtectedRoute>
                     } />
                     <Route path="/org-profile" element={
