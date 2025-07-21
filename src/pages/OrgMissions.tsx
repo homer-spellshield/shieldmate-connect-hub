@@ -47,7 +47,6 @@ const OrgMissions = () => {
 
       // Then get missions for that organization
       const { data: missionsData, error: missionsError } = await supabase
-        .from('missions')
         .select(`
           id,
           title,
@@ -57,6 +56,7 @@ const OrgMissions = () => {
           estimated_hours,
           created_at
         `)
+        .from('missions')
         .eq('organization_id', memberData.organization_id)
         .order('created_at', { ascending: false });
 
@@ -117,11 +117,9 @@ const OrgMissions = () => {
             Manage your posted missions and applications
           </p>
         </div>
-        <Button asChild>
-          <a href="/org-dashboard/missions/new">
-            <Plus className="h-4 w-4 mr-2" />
-            Create Mission
-          </a>
+        <Button onClick={() => navigate('/org-dashboard/missions/new')}>
+          <Plus className="h-4 w-4 mr-2" />
+          Create Mission
         </Button>
       </div>
 
@@ -133,11 +131,9 @@ const OrgMissions = () => {
               <p className="text-muted-foreground mb-4">
                 You haven't created any missions yet. Start by posting your first mission!
               </p>
-              <Button asChild>
-                <a href="/org-dashboard/missions/new">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create Your First Mission
-                </a>
+              <Button onClick={() => navigate('/org-dashboard/missions/new')}>
+                <Plus className="h-4 w-4 mr-2" />
+                Create Your First Mission
               </Button>
             </div>
           </CardContent>
@@ -182,10 +178,10 @@ const OrgMissions = () => {
                 </div>
 
                 <div className="flex gap-2">
-                  <Button variant="outline" size="sm" asChild>
-                    <a href={`/mission/${mission.id}`}>View Details</a>
+                  <Button variant="outline" size="sm" onClick={() => navigate(`/mission/${mission.id}`)}>
+                    View Details
                   </Button>
-                  {mission._count?.mission_applications && mission._count.mission_applications > 0 && (
+                  {mission.status === 'open' && mission._count?.mission_applications && mission._count.mission_applications > 0 && (
                     <Button
                       variant="outline"
                       size="sm"
