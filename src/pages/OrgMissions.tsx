@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -7,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Users, Clock, MapPin } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useNavigate } from 'react-router-dom';
 
 interface Mission {
   id: string;
@@ -24,6 +24,7 @@ interface Mission {
 const OrgMissions = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [missions, setMissions] = useState<Mission[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -185,7 +186,11 @@ const OrgMissions = () => {
                     <a href={`/mission/${mission.id}`}>View Details</a>
                   </Button>
                   {mission._count?.mission_applications && mission._count.mission_applications > 0 && (
-                    <Button variant="outline" size="sm">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => navigate(`/org-missions/${mission.id}/applications`)}
+                    >
                       Review Applications ({mission._count.mission_applications})
                     </Button>
                   )}
