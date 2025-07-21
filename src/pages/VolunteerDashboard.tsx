@@ -8,6 +8,7 @@ import { Progress } from "@/components/ui/progress";
 import { TrendingUp, Clock, Award, Target } from "lucide-react";
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useNavigate } from 'react-router-dom';
 
 interface Mission {
   id: string;
@@ -30,6 +31,7 @@ interface Profile {
 const VolunteerDashboard = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [missions, setMissions] = useState<Mission[]>([]);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -47,15 +49,11 @@ const VolunteerDashboard = () => {
         // Fetch user profile with error handling
         const { data: profileData } = await supabase
           .from('profiles')
-          .select('first_name, last_name')
+          .select('first_name, last_name, xp_points, level')
           .eq('user_id', user.id)
           .maybeSingle();
 
-        setProfile(profileData ? {
-          ...profileData,
-          xp_points: 0,
-          level: 1
-        } : null);
+        setProfile(profileData);
 
         // Fetch available missions
         const { data: missionsData, error: missionsError } = await supabase
@@ -262,13 +260,13 @@ const VolunteerDashboard = () => {
                       <span className="text-sm text-muted-foreground">
                         {mission.organizations?.name || 'Organization'}
                       </span>
-                      <Button size="sm" variant="outline">
+                      <Button size="sm" variant="outline" onClick={() => navigate('/missions')}>
                         Learn More
                       </Button>
                     </div>
                   </div>
                 ))}
-                <Button variant="outline" className="w-full">
+                <Button variant="outline" className="w-full" onClick={() => navigate('/missions')}>
                   View All Missions
                 </Button>
               </div>
@@ -311,7 +309,7 @@ const VolunteerDashboard = () => {
               </div>
             </div>
             
-            <Button className="w-full">
+            <Button className="w-full" onClick={() => navigate('/settings')}>
               Complete Profile
             </Button>
           </CardContent>
