@@ -88,80 +88,42 @@ const MissionControl = () => {
             try {
                 setLoading(true);
                 
-                // Fetch mission details with manual joins
+                // Fetch mission details
                 const { data: missionData, error: missionError } = await supabase
                     .from('missions')
-                    .select('*')
+                    .select(`
+                        *,
+                        organizations ( id, name ),
+                        mission_applications ( profiles ( user_id, first_name, last_name ) ),
+                        mission_templates ( mission_template_skills ( skills ( name ) ) )
+                    `)
                     .eq('id', missionId)
                     .single();
 
                 if (missionError) throw missionError;
                 if (!missionData) throw new Error("Mission not found or you don't have access.");
-
-                // Fetch organization
-                const { data: orgData } = await supabase
-                    .from('organizations')
-                    .select('id, name')
-                    .eq('id', missionData.organization_id)
-                    .single();
-
-                // Fetch accepted applications for this mission
-                const { data: applicationData } = await supabase
-                    .from('mission_applications')
-                    .select('volunteer_id')
-                    .eq('mission_id', missionId)
-                    .eq('status', 'approved');
-
-                // Fetch profiles for accepted volunteers
-                let profilesData = [];
-                if (applicationData && applicationData.length > 0) {
-                    const volunteerIds = applicationData.map(app => app.volunteer_id);
-                    const { data: profiles } = await supabase
-                        .from('profiles')
-                        .select('user_id, first_name, last_name')
-                        .in('user_id', volunteerIds);
-                    profilesData = profiles || [];
-                }
-
-                // Fetch mission template and skills
-                const { data: templateData } = await supabase
-                    .from('mission_templates')
-                    .select('*')
-                    .eq('id', missionData.template_id)
-                    .single();
-
-                let skillsData = [];
-                if (templateData) {
-                    const { data: templateSkills } = await supabase
-                        .from('mission_template_skills')
-                        .select('skill_id')
-                        .eq('template_id', templateData.id);
-
-                    if (templateSkills && templateSkills.length > 0) {
-                        const skillIds = templateSkills.map(ts => ts.skill_id);
-                        const { data: skills } = await supabase
-                            .from('skills')
-                            .select('name')
-                            .in('id', skillIds);
-                        skillsData = skills || [];
-                    }
-                }
-
-                // Combine data
-                const combinedMission = {
-                    ...missionData,
-                    organizations: orgData,
-                    mission_applications: profilesData.map(profile => ({ profiles: profile })),
-                    mission_templates: templateData ? {
-                        mission_template_skills: skillsData.map(skill => ({ skills: skill }))
-                    } : null
-                };
-
-                setMission(combinedMission as MissionDetails);
                 
-                // For now, set empty arrays for messages and files since these tables don't exist
-                setMessages([]);
-                setMissionFiles([]);
+                setMission(missionData as any);
+                
+                // Fetch initial chat messages
+                const { data: messagesData, error: messagesError } = await supabase
+                    .from('mission_messages')
+                    .select('*, profiles ( first_name, last_name )')
+                    .eq('mission_id', missionId)
+                    .order('created_at');
+
+                if (messagesError) throw messagesError;
+                setMessages(messagesData as any || []);
+
+                // Fetch initial files
+                const { data: filesData, error: filesError } = await supabase
+                    .from('mission_files')
+                    .select('*, profiles ( first_name, last_name )')
+                    .eq('mission_id', missionId)
+                    .order('created_at', { ascending: false });
+
+                if (filesError) throw filesError;
+                setMissionFiles(filesData as any || []);
 
             } catch (error: any) {
                 toast({ title: "Error", description: error.message, variant: "destructive" });
@@ -173,11 +135,31 @@ const MissionControl = () => {
         fetchAllData();
     }, [missionId, user, toast, navigate]);
 
-    // Effect for real-time subscriptions - disabled for now since tables don't exist
+    // Effect for real-time subscriptions
     useEffect(() => {
-        // Real-time subscriptions would go here when mission_messages and mission_files tables exist
+        if (!missionId) return;
+
+        const messageChannel = supabase.channel(`mission-messages:${missionId}`)
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'mission_messages', filter: `mission_id=eq.${missionId}` },
+                async (payload) => {
+                    const { data: profile } = await supabase.from('profiles').select('first_name, last_name').eq('user_id', payload.new.user_id).single();
+                    setMessages(messages => [...messages, { ...payload.new, profiles: profile } as ChatMessage]);
+                }
+            )
+            .subscribe();
+            
+        const fileChannel = supabase.channel(`mission-files:${missionId}`)
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'mission_files', filter: `mission_id=eq.${missionId}`}, 
+            async () => {
+              const { data: filesData } = await supabase.from('mission_files').select('*, profiles (first_name, last_name)').eq('mission_id', missionId).order('created_at', { ascending: false });
+              setMissionFiles(filesData as any || []);
+            }
+          )
+          .subscribe();
+
         return () => {
-            // Cleanup would go here
+            supabase.removeChannel(messageChannel);
+            supabase.removeChannel(fileChannel);
         };
     }, [missionId]);
 
@@ -190,42 +172,86 @@ const MissionControl = () => {
         e.preventDefault();
         if (!newMessage.trim() || !user || !missionId) return;
         
-        // For now, just show a message that this feature is not implemented
-        toast({ 
-            title: "Feature Coming Soon", 
-            description: "Mission chat will be available once the messaging system is implemented.",
-            variant: "default"
-        });
+        const content = newMessage;
         setNewMessage("");
+
+        const { error } = await supabase.from('mission_messages').insert({
+            mission_id: missionId,
+            user_id: user.id,
+            content: content,
+        });
+
+        if (error) {
+            toast({ title: "Error sending message", description: error.message, variant: "destructive" });
+            setNewMessage(content); // Restore message on error
+        }
     };
 
     const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
         if (!event.target.files || event.target.files.length === 0 || !user || !missionId) return;
         
-        // For now, just show a message that this feature is not implemented
-        toast({ 
-            title: "Feature Coming Soon", 
-            description: "File upload will be available once the file storage system is implemented.",
-            variant: "default"
-        });
+        const file = event.target.files[0];
+        const filePath = `${missionId}/${user.id}/${Date.now()}_${file.name}`;
         
-        if(fileInputRef.current) fileInputRef.current.value = "";
+        try {
+            setUploading(true);
+            const { error: uploadError } = await supabase.storage
+                .from('mission-files')
+                .upload(filePath, file);
+
+            if (uploadError) throw uploadError;
+
+            const { error: dbError } = await supabase.from('mission_files').insert({
+                mission_id: missionId,
+                user_id: user.id,
+                file_name: file.name,
+                file_path: filePath,
+                file_size: file.size,
+                file_type: file.type,
+            });
+
+            if (dbError) throw dbError;
+            
+            toast({ title: "File Uploaded", description: `${file.name} has been added to the repository.` });
+
+        } catch (error: any) {
+            toast({ title: "Upload Failed", description: error.message, variant: "destructive" });
+        } finally {
+            setUploading(false);
+            if(fileInputRef.current) fileInputRef.current.value = "";
+        }
     };
 
     const handleFileDelete = async (file: MissionFile) => {
-        toast({ 
-            title: "Feature Coming Soon", 
-            description: "File management will be available once the file storage system is implemented.",
-            variant: "default"
-        });
+        if (!window.confirm(`Are you sure you want to delete "${file.file_name}"?`)) return;
+
+        try {
+            const { error: storageError } = await supabase.storage.from('mission-files').remove([file.file_path]);
+            if (storageError) throw storageError;
+
+            const { error: dbError } = await supabase.from('mission_files').delete().eq('id', file.id);
+            if (dbError) throw dbError;
+
+            toast({ title: "File Deleted", description: `${file.file_name} has been removed.` });
+        } catch (error: any) {
+            toast({ title: "Delete Failed", description: error.message, variant: "destructive" });
+        }
     };
 
     const handleFileDownload = async (file: MissionFile) => {
-        toast({ 
-            title: "Feature Coming Soon", 
-            description: "File download will be available once the file storage system is implemented.",
-            variant: "default"
-        });
+        try {
+            const { data, error } = await supabase.storage.from('mission-files').download(file.file_path);
+            if (error) throw error;
+            const blob = new Blob([data]);
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = file.file_name;
+            a.click();
+            window.URL.revokeObjectURL(url);
+        } catch (error: any) {
+            toast({ title: "Download Failed", description: error.message, variant: "destructive" });
+        }
     };
 
     if (loading) return <MissionControlSkeleton />;
@@ -257,8 +283,8 @@ const MissionControl = () => {
                             <div ref={chatContainerRef} className="flex-1 space-y-4 overflow-y-auto p-4 border rounded-md bg-muted/50 mb-4">
                                 {messages.length === 0 ? (
                                     <div className="text-center text-muted-foreground py-8">
-                                        <p>Mission communication channel ready.</p>
-                                        <p className="text-sm">Messages will appear here once the messaging system is implemented.</p>
+                                        <p>No messages yet.</p>
+                                        <p className="text-sm">Start the conversation!</p>
                                     </div>
                                 ) : (
                                     messages.map(msg => {
