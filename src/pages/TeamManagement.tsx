@@ -39,21 +39,19 @@ const inviteSchema = z.object({
 });
 type InviteForm = z.infer<typeof inviteSchema>;
 
-// Updated type to fetch email from profiles table
+// **MODIFICATION 1: Updated TeamMember type to match the RPC function's return value**
 type TeamMember = {
   id: string;
   role: string;
   user_id: string;
-  profiles: {
-    first_name: string | null;
-    last_name: string | null;
-    avatar_url: string | null;
-    email: string | null; // Added email here
-  } | null;
+  first_name: string | null;
+  last_name: string | null;
+  avatar_url: string | null;
+  email: string | null;
 };
 
 const TeamManagement = () => {
-  const { user, profile } = useAuth();
+  const { user } = useAuth();
   const { toast } = useToast();
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
@@ -68,54 +66,33 @@ const TeamManagement = () => {
     },
   });
 
+  // **MODIFICATION 2: Replaced the entire fetch function to use the new Supabase RPC**
   const fetchTeamMembers = async () => {
     if (!user) return;
     try {
       setLoading(true);
+      // First, get the user's organization ID and name
       const { data: orgMemberData, error: orgMemberError } = await supabase
         .from('organization_members')
-        .select('organization_id, organizations(id, name)')
+        .select('organizations(id, name)')
         .eq('user_id', user.id)
         .single();
-
-      if (orgMemberError || !orgMemberData) throw orgMemberError || new Error("Organization not found.");
+  
+      if (orgMemberError || !orgMemberData?.organizations) {
+        throw orgMemberError || new Error("Organization not found.");
+      }
       
       const org = orgMemberData.organizations as { id: string, name: string };
       setOrganization(org);
-
-      // First get organization members
-      const { data: membersData, error: membersError } = await supabase
-        .from('organization_members')
-        .select('id, role, user_id')
-        .eq('organization_id', org.id);
-
-      if (membersError) throw membersError;
-
-      // Then get profiles for each member
-      const userIds = membersData?.map(m => m.user_id) || [];
-      const { data: profilesData, error: profilesError } = await supabase
-        .from('profiles')
-        .select('user_id, first_name, last_name, avatar_url')
-        .in('user_id', userIds);
-
-      if (profilesError) throw profilesError;
-
-      // Get user emails from auth metadata (since we can't directly query auth.users)
-      // We'll need to fetch this differently - for now, let's use a workaround
-      const membersWithProfiles = membersData?.map(member => {
-        const profile = profilesData?.find(p => p.user_id === member.user_id);
-        return {
-          ...member,
-          profiles: profile ? {
-            first_name: profile.first_name,
-            last_name: profile.last_name,
-            avatar_url: profile.avatar_url,
-            email: null // We'll need to get this from somewhere else
-          } : null
-        };
-      }) || [];
-
-      setTeamMembers(membersWithProfiles as TeamMember[]);
+  
+      // Now, make a single, secure call to our new RPC function
+      const { data: membersData, error: rpcError } = await supabase
+        .rpc('get_team_members', { org_id: org.id });
+  
+      if (rpcError) throw rpcError;
+  
+      setTeamMembers(membersData as TeamMember[]);
+  
     } catch (error: any) {
       toast({
         title: "Error fetching team members",
@@ -127,6 +104,7 @@ const TeamManagement = () => {
     }
   };
 
+
   useEffect(() => {
     fetchTeamMembers();
   }, [user]);
@@ -134,7 +112,6 @@ const TeamManagement = () => {
   const handleInviteMember = async (values: InviteForm) => {
     if (!organization) return;
   
-    // This will call a Supabase Edge Function we will create in the next step.
     const { error } = await supabase.functions.invoke('invite-team-member', {
       body: {
         orgId: organization.id,
@@ -265,22 +242,23 @@ const TeamManagement = () => {
                 {teamMembers.length > 0 ? (
                   teamMembers.map((member) => (
                     <TableRow key={member.id}>
+                      {/* **MODIFICATION 3: Updated JSX to use flattened data** */}
                       <TableCell>
                         <div className="flex items-center gap-3">
                           <Avatar>
                             <AvatarFallback>
-                              {getInitials(member.profiles?.first_name, member.profiles?.last_name)}
+                              {getInitials(member.first_name, member.last_name)}
                             </AvatarFallback>
                           </Avatar>
                           <div>
                             <p className="font-medium">
-                              {member.profiles?.first_name} {member.profiles?.last_name}
+                              {member.first_name} {member.last_name}
                             </p>
                           </div>
                         </div>
                       </TableCell>
                       <TableCell className="text-muted-foreground">
-                        {member.profiles?.email}
+                        {member.email}
                       </TableCell>
                       <TableCell>
                         <Badge variant={member.role === 'owner' ? 'default' : 'secondary'} className="capitalize">
