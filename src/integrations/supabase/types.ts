@@ -486,6 +486,21 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      // **MODIFICATION: Added the new RPC function definition here**
+      get_team_members: {
+        Args: {
+          org_id: string
+        }
+        Returns: {
+          id: string
+          role: string
+          user_id: string
+          first_name: string | null
+          last_name: string | null
+          email: string | null
+          avatar_url: string | null
+        }[]
+      }
       get_user_organizations: {
         Args: Record<PropertyKey, never>
         Returns: {
