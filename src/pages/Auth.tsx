@@ -18,7 +18,8 @@ const signInSchema = z.object({
 });
 
 const signUpSchema = z.object({
-  orgName: z.string().min(2, 'Organization name is required'),
+  orgName: z.string().min(2, 'Organisation name is required'),
+  abn: z.string().min(11, 'Please enter a valid 11-digit ABN').max(11, 'Please enter a valid 11-digit ABN'),
   firstName: z.string().min(1, 'First name is required'),
   lastName: z.string().min(1, 'Last name is required'),
   email: z.string().email('Please enter a valid email address'),
@@ -57,6 +58,7 @@ const Auth = () => {
     resolver: zodResolver(signUpSchema),
     defaultValues: {
       orgName: '',
+      abn: '',
       firstName: '',
       lastName: '',
       email: '',
@@ -74,7 +76,7 @@ const Auth = () => {
   };
 
   const handleSignUp = async (data: SignUpForm) => {
-    const { error } = await signUp(data.email, data.password, data.firstName, data.lastName, data.orgName, data.isAuthorized);
+    const { error } = await signUp(data.email, data.password, data.firstName, data.lastName, data.orgName, data.isAuthorized, data.abn);
     if (!error) {
       signUpForm.reset();
       setActiveTab('signin');
@@ -90,7 +92,7 @@ const Auth = () => {
           </div>
           <h1 className="text-3xl font-bold tracking-tight">ShieldMate</h1>
           <p className="text-muted-foreground">
-            Connecting organizations with tech volunteers
+            Connecting organisations with tech volunteers
           </p>
         </div>
 
@@ -98,7 +100,7 @@ const Auth = () => {
           <CardHeader>
             <CardTitle>Welcome to ShieldMate</CardTitle>
             <CardDescription>
-              Sign in or register to get started.
+              Sign in or register your organisation to get started.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -138,8 +140,15 @@ const Auth = () => {
                   <form onSubmit={signUpForm.handleSubmit(handleSignUp)} className="space-y-4">
                     <FormField control={signUpForm.control} name="orgName" render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Organization Name</FormLabel>
+                        <FormLabel>Organisation Name</FormLabel>
                         <FormControl><Input placeholder="Your Company Inc." {...field} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                    <FormField control={signUpForm.control} name="abn" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Organisation ABN</FormLabel>
+                        <FormControl><Input placeholder="e.g., 50123456789" {...field} /></FormControl>
                         <FormMessage />
                       </FormItem>
                     )} />
@@ -178,7 +187,7 @@ const Auth = () => {
                         <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
                             <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
                             <div className="space-y-1 leading-none">
-                                <FormLabel>I confirm that I am authorized to register this organization.</FormLabel>
+                                <FormLabel>I confirm that I am authorized to register this organisation.</FormLabel>
                                 <FormMessage />
                             </div>
                         </FormItem>
