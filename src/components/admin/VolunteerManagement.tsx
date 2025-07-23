@@ -2,12 +2,9 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -27,9 +24,9 @@ type VolunteerForm = z.infer<typeof volunteerSchema>;
 
 interface Volunteer {
   id: string;
-  email: string;
-  first_name: string;
-  last_name: string;
+  email: string | null;
+  first_name: string | null;
+  last_name: string | null;
   bio: string | null;
   created_at: string;
 }
@@ -54,35 +51,18 @@ export const VolunteerManagement = () => {
 
   const fetchVolunteers = async () => {
     try {
-      const { data: volunteerRoles } = await supabase
-        .from('user_roles')
-        .select('user_id')
-        .eq('role', 'volunteer');
+      setLoading(true);
+      // Call the new RPC function to securely get volunteer details
+      const { data, error } = await supabase.rpc('get_all_volunteers_with_details');
 
-      if (volunteerRoles && volunteerRoles.length > 0) {
-        const userIds = volunteerRoles.map(role => role.user_id);
-        const { data: profiles } = await supabase
-          .from('profiles')
-          .select('*')
-          .in('user_id', userIds);
+      if (error) throw error;
+      setVolunteers(data || []);
 
-        // Get auth users data
-        const volunteersData = profiles?.map(profile => ({
-          id: profile.user_id,
-          email: 'Email not available', // We can't fetch email from auth.users via client
-          first_name: profile.first_name || '',
-          last_name: profile.last_name || '',
-          bio: profile.bio,
-          created_at: profile.created_at
-        })) || [];
-
-        setVolunteers(volunteersData);
-      }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching volunteers:', error);
       toast({
         title: 'Error',
-        description: 'Failed to fetch volunteers',
+        description: 'Failed to fetch volunteers: ' + error.message,
         variant: 'destructive'
       });
     } finally {
@@ -96,7 +76,6 @@ export const VolunteerManagement = () => {
 
   const handleCreateVolunteer = async (data: VolunteerForm) => {
     try {
-      // Call the admin edge function to create user
       const { data: result, error } = await supabase.functions.invoke('admin-create-user', {
         body: {
           email: data.email,
@@ -108,9 +87,7 @@ export const VolunteerManagement = () => {
         }
       });
 
-      if (error) {
-        throw error;
-      }
+      if (error) throw error;
 
       toast({
         title: 'Success',
@@ -119,7 +96,7 @@ export const VolunteerManagement = () => {
 
       setIsDialogOpen(false);
       form.reset();
-      fetchVolunteers();
+      await fetchVolunteers(); // Refresh the list
     } catch (error: any) {
       console.error('Error creating volunteer:', error);
       toast({
@@ -131,7 +108,7 @@ export const VolunteerManagement = () => {
   };
 
   const filteredVolunteers = volunteers.filter(volunteer =>
-    `${volunteer.first_name} ${volunteer.last_name} ${volunteer.email}`
+    `${volunteer.first_name || ''} ${volunteer.last_name || ''} ${volunteer.email || ''}`
       .toLowerCase()
       .includes(searchTerm.toLowerCase())
   );
@@ -277,7 +254,7 @@ export const VolunteerManagement = () => {
                   filteredVolunteers.map((volunteer) => (
                     <TableRow key={volunteer.id}>
                       <TableCell className="font-medium">
-                        {volunteer.first_name} {volunteer.last_name}
+                        {volunteer.first_name || 'N/A'} {volunteer.last_name || ''}
                       </TableCell>
                       <TableCell>{volunteer.email}</TableCell>
                       <TableCell>
