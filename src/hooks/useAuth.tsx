@@ -23,7 +23,7 @@ interface AuthContextType {
   loading: boolean;
   signOut: () => Promise<void>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
-  signUp: (email: string, password: string, firstName: string, lastName: string, orgName: string, isAuthorized: boolean) => Promise<{ error: PostgrestError | Error | null }>;
+  signUp: (email: string, password: string, firstName: string, lastName: string, orgName: string, isAuthorized: boolean, abn: string) => Promise<{ error: PostgrestError | Error | null }>;
   refetchProfile: () => Promise<void>;
 }
 
@@ -124,16 +124,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const signUp = async (email: string, password: string, firstName: string, lastName: string, orgName: string, isAuthorized: boolean) => {
-    // ... (rest of the signUp function remains the same as it was correct)
+  const signUp = async (email: string, password: string, firstName: string, lastName: string, orgName: string, isAuthorized: boolean, abn: string) => {
     if (!isAuthorized) {
-      const error = new Error('You must confirm you are authorized to register this organization.');
+      const error = new Error('You must confirm you are authorized to register this organisation.');
       toast({ title: "Registration Failed", description: error.message, variant: "destructive" });
       return { error };
     }
     const emailDomain = email.split('@')[1];
     if (freeEmailDomains.includes(emailDomain)) {
-      const error = new Error('Registration with free email providers is not allowed. Please use your organization email.');
+      const error = new Error('Registration with free email providers is not allowed. Please use your organisation email.');
       toast({ title: "Registration Failed", description: error.message, variant: "destructive" });
       return { error };
     }
@@ -146,7 +145,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return { error: domainCheckError };
     }
     if (existingOrgs && existingOrgs.length > 0) {
-      const error = new Error('An organization with this email domain already exists. Please contact an admin in your organization to be added.');
+      const error = new Error('An organisation with this email domain already exists. Please contact an admin in your organisation to be added.');
       toast({ title: "Registration Failed", description: error.message, variant: "destructive" });
       return { error };
     }
@@ -158,7 +157,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           first_name: firstName,
           last_name: lastName,
           org_name: orgName,
-          domain: emailDomain
+          domain: emailDomain,
+          abn: abn // Pass the ABN to the Supabase function
         },
       },
     });
