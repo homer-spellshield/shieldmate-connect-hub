@@ -2,20 +2,14 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Check, X, Building, Loader2 } from 'lucide-react';
+import type { Database } from '@/integrations/supabase/types';
 
-// Define the type for an organisation object
-interface Organisation {
-  id: string;
-  name: string;
-  abn: string | null;
-  contact_email: string | null;
-  created_at: string;
-  status: string;
-}
+// Define the type for an organisation object based on the database schema
+// This now includes the new 'status' and 'abn' fields.
+type Organisation = Database['public']['Tables']['organizations']['Row'];
 
 export const OrganisationVerification = () => {
   const [organisations, setOrganisations] = useState<Organisation[]>([]);
