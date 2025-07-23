@@ -5,11 +5,16 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Check, X, Building, Loader2 } from 'lucide-react';
-import type { Database } from '@/integrations/supabase/types';
 
-// Define the type for an organisation object based on the database schema
-// This now includes the new 'status' and 'abn' fields.
-type Organisation = Database['public']['Tables']['organizations']['Row'];
+// Explicitly define the Organisation type to match our database
+interface Organisation {
+  id: string;
+  name: string;
+  abn: string | null;
+  contact_email: string | null;
+  created_at: string;
+  status: string;
+}
 
 export const OrganisationVerification = () => {
   const [organisations, setOrganisations] = useState<Organisation[]>([]);
@@ -17,7 +22,6 @@ export const OrganisationVerification = () => {
   const [processingId, setProcessingId] = useState<string | null>(null);
   const { toast } = useToast();
 
-  // Function to fetch organisations awaiting verification
   const fetchPendingOrganisations = async () => {
     try {
       setLoading(true);
@@ -44,7 +48,6 @@ export const OrganisationVerification = () => {
     fetchPendingOrganisations();
   }, []);
 
-  // Handler to approve an organisation
   const handleApprove = async (orgId: string) => {
     setProcessingId(orgId);
     try {
@@ -59,7 +62,6 @@ export const OrganisationVerification = () => {
         title: 'Organisation Approved',
         description: 'The organisation can now post missions.',
       });
-      // Refresh the list by filtering out the approved organisation
       setOrganisations(prev => prev.filter(org => org.id !== orgId));
     } catch (error: any) {
       toast({
@@ -72,7 +74,6 @@ export const OrganisationVerification = () => {
     }
   };
 
-  // Handler to reject an organisation
   const handleReject = async (orgId: string) => {
     if (!window.confirm('Are you sure you want to reject this organisation? This action cannot be undone.')) {
         return;
@@ -91,7 +92,6 @@ export const OrganisationVerification = () => {
         description: 'The organisation has been marked as rejected.',
         variant: 'destructive',
       });
-       // Refresh the list by filtering out the rejected organisation
       setOrganisations(prev => prev.filter(org => org.id !== orgId));
     } catch (error: any) {
       toast({
