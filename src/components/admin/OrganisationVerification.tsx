@@ -25,14 +25,14 @@ export const OrganisationVerification = () => {
   const fetchPendingOrganisations = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      const response = await (supabase as any)
         .from('organizations')
         .select('*')
         .eq('status', 'pending_verification')
         .order('created_at', { ascending: true });
-
-      if (error) throw error;
-      setOrganisations(data as Organisation[] || []);
+      
+      if (response.error) throw response.error;
+      setOrganisations((response.data || []) as Organisation[]);
     } catch (error: any) {
       toast({
         title: 'Error',
@@ -51,7 +51,7 @@ export const OrganisationVerification = () => {
   const handleApprove = async (orgId: string) => {
     setProcessingId(orgId);
     try {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('organizations')
         .update({ status: 'approved' })
         .eq('id', orgId);
@@ -80,7 +80,7 @@ export const OrganisationVerification = () => {
     }
     setProcessingId(orgId);
     try {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('organizations')
         .update({ status: 'rejected' })
         .eq('id', orgId);

@@ -55,7 +55,7 @@ const OrganisationDashboard = () => {
           return;
         }
 
-        const orgData = orgMember.organizations as Organization;
+        const orgData = orgMember.organizations as any as Organization;
         setOrganization(orgData);
 
         if (orgData.status !== 'approved') {

@@ -77,7 +77,7 @@ const CreateMission = () => {
           throw new Error("Could not find an organisation for your account.");
         }
         
-        const orgData = orgMemberData.organizations as Organization;
+        const orgData = orgMemberData.organizations as any as Organization;
         setUserOrganization(orgData);
 
         if (orgData.status !== 'approved') {
