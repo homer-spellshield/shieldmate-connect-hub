@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { Users, Building, Award, Target } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 interface Stats {
   volunteers: number;
@@ -9,6 +10,16 @@ interface Stats {
   skills: number;
   missions: number;
 }
+
+// Dummy data for the new chart
+const missionActivityData = [
+  { month: 'Jan', created: 4 },
+  { month: 'Feb', created: 3 },
+  { month: 'Mar', created: 5 },
+  { month: 'Apr', created: 7 },
+  { month: 'May', created: 6 },
+  { month: 'Jun', created: 10 },
+];
 
 export const SystemOverview = () => {
   const [stats, setStats] = useState<Stats>({
@@ -46,44 +57,17 @@ export const SystemOverview = () => {
   }, []);
 
   const statCards = [
-    {
-      title: 'Total Volunteers',
-      value: stats.volunteers,
-      icon: Users,
-      description: 'Registered volunteers in the system'
-    },
-    {
-      title: 'Organizations',
-      value: stats.organizations,
-      icon: Building,
-      description: 'Active organizations seeking help'
-    },
-    {
-      title: 'Available Skills',
-      value: stats.skills,
-      icon: Award,
-      description: 'Skills available for matching'
-    },
-    {
-      title: 'Mission Templates',
-      value: stats.missions,
-      icon: Target,
-      description: 'Available mission templates'
-    }
+    { title: 'Total Volunteers', value: stats.volunteers, icon: Users, description: 'Registered volunteers in the system' },
+    { title: 'Organisations', value: stats.organizations, icon: Building, description: 'Active organisations seeking help' },
+    { title: 'Available Skills', value: stats.skills, icon: Award, description: 'Skills available for matching' },
+    { title: 'Mission Templates', value: stats.missions, icon: Target, description: 'Available mission templates' }
   ];
 
   if (loading) {
     return (
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {[...Array(4)].map((_, i) => (
-          <Card key={i}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Loading...</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="h-8 w-16 bg-muted animate-pulse rounded"></div>
-            </CardContent>
-          </Card>
+          <Card key={i}><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">Loading...</CardTitle></CardHeader><CardContent><div className="h-8 w-16 bg-muted animate-pulse rounded"></div></CardContent></Card>
         ))}
       </div>
     );
@@ -111,26 +95,26 @@ export const SystemOverview = () => {
 
       <Card>
         <CardHeader>
-          <CardTitle>System Health</CardTitle>
+          <CardTitle>Mission Activity</CardTitle>
           <CardDescription>
-            Overall system status and key metrics
+            A look at the number of missions created over the past months.
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium">Database Connection</span>
-              <span className="text-sm text-green-600">Connected</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium">Authentication</span>
-              <span className="text-sm text-green-600">Active</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium">Row Level Security</span>
-              <span className="text-sm text-green-600">Enabled</span>
-            </div>
-          </div>
+        <CardContent className="h-[350px] w-full">
+          <ResponsiveContainer>
+            <BarChart data={missionActivityData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+              <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" fontSize={12} />
+              <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: "hsl(var(--background))",
+                  borderColor: "hsl(var(--border))",
+                }}
+              />
+              <Bar dataKey="created" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
         </CardContent>
       </Card>
     </div>
