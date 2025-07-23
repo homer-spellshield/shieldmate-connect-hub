@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Plus, Users, CheckCircle, Clock, TrendingUp, Hourglass } from "lucide-react";
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useNavigate } from 'react-router-dom';
 
 // Explicitly define the types to match our database
 interface Mission {
@@ -28,6 +29,7 @@ interface Organization {
 const OrganisationDashboard = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [missions, setMissions] = useState<Mission[]>([]);
   const [organization, setOrganization] = useState<Organization | null>(null);
   const [loading, setLoading] = useState(true);
@@ -70,7 +72,7 @@ const OrganisationDashboard = () => {
         if (missionError) throw missionError;
 
         if (missionData) {
-          setMissions(missionData);
+          setMissions(missionData as Mission[]);
         }
       } catch (error: any) {
         console.error('Error fetching data:', error);
@@ -88,7 +90,7 @@ const OrganisationDashboard = () => {
   }, [user, toast]);
 
   const handlePostNewMission = () => {
-    window.location.href = "/org-dashboard/missions/new";
+    navigate("/org-dashboard/missions/new");
   };
 
   if (loading) {
@@ -235,7 +237,7 @@ const OrganisationDashboard = () => {
                 Post a new mission to connect with skilled volunteers who want to help your organisation succeed.
               </p>
               <Button onClick={handlePostNewMission} className="w-full">
-                <Plus className="w-4 h-4 mr-2" />
+                <Plus className="h-4 w-4 mr-2" />
                 Post New Mission
               </Button>
               <div className="text-xs text-muted-foreground text-center">
@@ -285,7 +287,7 @@ const OrganisationDashboard = () => {
             </CardHeader>
             <CardContent className="space-y-2">
               <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => navigate('/team-management')}>
-                <Users className="w-4 h-4 mr-2" />
+                <Users className="h-4 w-4 mr-2" />
                 Manage Team Members
               </Button>
               <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => navigate('/org-missions')}>
@@ -293,7 +295,7 @@ const OrganisationDashboard = () => {
                 Review Applications
               </Button>
               <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => navigate('/org-profile')}>
-                <TrendingUp className="w-4 h-4 mr-2" />
+                <TrendingUp className="h-4 w-4 mr-2" />
                 Organisation Profile
               </Button>
             </CardContent>
