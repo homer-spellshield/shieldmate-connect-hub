@@ -1,11 +1,11 @@
-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { VolunteerManagement } from '@/components/admin/VolunteerManagement';
 import { SkillManagement } from '@/components/admin/SkillManagement';
 import { MissionTemplateManagement } from '@/components/admin/MissionTemplateManagement';
 import { SystemOverview } from '@/components/admin/SystemOverview';
-import { Users, Award, BarChart3, Briefcase } from 'lucide-react';
+import { OrganisationVerification } from '@/components/admin/OrganisationVerification'; // Import the new component
+import { Users, Award, BarChart3, Briefcase, CheckSquare } from 'lucide-react';
 
 const AdminDashboard = () => {
   return (
@@ -18,10 +18,14 @@ const AdminDashboard = () => {
       </div>
 
       <Tabs defaultValue="overview" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5"> {/* Updated from grid-cols-4 to grid-cols-5 */}
           <TabsTrigger value="overview" className="flex items-center gap-2">
             <BarChart3 className="h-4 w-4" />
             Overview
+          </TabsTrigger>
+          <TabsTrigger value="verification" className="flex items-center gap-2"> {/* New Verification Tab */}
+            <CheckSquare className="h-4 w-4" />
+            Verification
           </TabsTrigger>
           <TabsTrigger value="volunteers" className="flex items-center gap-2">
             <Users className="h-4 w-4" />
@@ -39,6 +43,10 @@ const AdminDashboard = () => {
 
         <TabsContent value="overview">
           <SystemOverview />
+        </TabsContent>
+
+        <TabsContent value="verification"> {/* New Verification Tab Content */}
+          <OrganisationVerification />
         </TabsContent>
 
         <TabsContent value="volunteers">
