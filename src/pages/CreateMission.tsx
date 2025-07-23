@@ -13,7 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
-import { ArrowLeft, MapPin, Clock, BarChart3 } from 'lucide-react';
+import { ArrowLeft, MapPin, Clock, BarChart3, Loader2 } from 'lucide-react';
 
 const missionSchema = z.object({
   template_id: z.string().min(1, 'Please select a mission template'),
@@ -34,6 +34,7 @@ interface MissionTemplate {
 interface Organization {
   id: string;
   name: string;
+  status: string; // Added status
 }
 
 const operationNames = [
@@ -61,55 +62,46 @@ const CreateMission = () => {
 
   useEffect(() => {
     const fetchData = async () => {
-      if (!user) {
-        // Wait for the user object to be available
-        return;
-      }
+      if (!user) return;
+      
       try {
         setLoading(true);
         
-        // --- Step 1: Fetch Mission Templates ---
+        // Fetch user's organization and status first
+        const { data: orgMemberData, error: orgMemberError } = await supabase
+          .from('organization_members')
+          .select('organizations ( id, name, status )')
+          .eq('user_id', user.id)
+          .single();
+
+        if (orgMemberError || !orgMemberData?.organizations) {
+          throw new Error("Could not find an organisation for your account.");
+        }
+        
+        const orgData = orgMemberData.organizations as Organization;
+        setUserOrganization(orgData);
+
+        // If not approved, redirect to dashboard where they'll see the pending message
+        if (orgData.status !== 'approved') {
+          toast({
+            title: 'Verification Required',
+            description: 'Your organisation must be approved before you can create missions.',
+            variant: 'destructive',
+          });
+          navigate('/org-dashboard');
+          return;
+        }
+
+        // Fetch Mission Templates
         const { data: templatesData, error: templatesError } = await supabase
           .from('mission_templates')
           .select('id, title, description, estimated_hours, difficulty_level')
           .order('title');
 
         if (templatesError) {
-          console.error("Error fetching mission templates:", templatesError);
           throw new Error("Failed to load mission templates. Please try again.");
         }
         setTemplates(templatesData || []);
-
-        // --- Step 2: Fetch the User's Organization ID ---
-        const { data: orgMemberData, error: orgMemberError } = await supabase
-          .from('organization_members')
-          .select('organization_id')
-          .eq('user_id', user.id)
-          .limit(1);
-
-        if (orgMemberError) {
-          console.error("Error fetching organization membership:", orgMemberError);
-          throw new Error("Could not find an organization for your account.");
-        }
-        if (!orgMemberData || orgMemberData.length === 0) {
-          throw new Error("Your account is not associated with any organization.");
-        }
-        
-        const orgId = orgMemberData[0].organization_id;
-
-        // --- Step 3: Fetch the Organization Details using the ID ---
-        const { data: orgData, error: orgDataError } = await supabase
-          .from('organizations')
-          .select('id, name')
-          .eq('id', orgId)
-          .single();
-        
-        if (orgDataError) {
-            console.error("Error fetching organization details:", orgDataError);
-            throw new Error("Could not load details for your organization.");
-        }
-
-        setUserOrganization(orgData as Organization);
 
       } catch (error: any) {
         toast({
@@ -123,7 +115,7 @@ const CreateMission = () => {
     };
 
     fetchData();
-  }, [user, toast]);
+  }, [user, toast, navigate]);
 
   const handleTemplateSelect = (templateId: string) => {
     const template = templates.find(t => t.id === templateId);
@@ -137,7 +129,7 @@ const CreateMission = () => {
     if (!userOrganization) {
       toast({
         title: 'Error',
-        description: 'Unable to determine your organization. Please try again.',
+        description: 'Unable to determine your organisation. Please try again.',
         variant: 'destructive',
       });
       return;
@@ -174,7 +166,7 @@ const CreateMission = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
@@ -195,7 +187,7 @@ const CreateMission = () => {
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Create New Mission</h1>
         <p className="text-muted-foreground">
-          Post a mission to connect with skilled volunteers who can help your organization
+          Post a mission to connect with skilled volunteers who can help your organisation
         </p>
       </div>
 
@@ -325,7 +317,7 @@ const CreateMission = () => {
           {userOrganization && (
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Organization</CardTitle>
+                <CardTitle className="text-lg">Organisation</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="flex items-center space-x-2">
@@ -351,7 +343,7 @@ const CreateMission = () => {
               </div>
               <div>
                 <h5 className="font-medium">Provide Context</h5>
-                <p className="text-muted-foreground">Explain how this mission helps your organization's goals</p>
+                <p className="text-muted-foreground">Explain how this mission helps your organisation's goals</p>
               </div>
             </CardContent>
           </Card>

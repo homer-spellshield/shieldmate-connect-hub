@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Plus, Users, CheckCircle, Clock, TrendingUp } from "lucide-react";
+import { Plus, Users, CheckCircle, Clock, TrendingUp, Hourglass } from "lucide-react";
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -21,6 +21,7 @@ interface Mission {
 interface Organization {
   id: string;
   name: string;
+  status: string; // Added status field
 }
 
 const OrganisationDashboard = () => {
@@ -35,38 +36,37 @@ const OrganisationDashboard = () => {
       if (!user) return;
 
       try {
-        // Get user's organization
+        // Get user's organization and its status
         const { data: orgMember } = await supabase
           .from('organization_members')
-          .select('organization_id')
+          .select('organizations ( id, name, status )') // Fetch status along with id and name
           .eq('user_id', user.id)
           .single();
 
-        if (!orgMember) {
+        if (!orgMember || !orgMember.organizations) {
           toast({
-            title: "No Organization",
-            description: "You are not associated with any organization.",
+            title: "No Organisation",
+            description: "You are not associated with any organisation.",
             variant: "destructive"
           });
+          setLoading(false);
           return;
         }
 
-        // Get organization details
-        const { data: orgData } = await supabase
-          .from('organizations')
-          .select('id, name')
-          .eq('id', orgMember.organization_id)
-          .single();
+        const orgData = orgMember.organizations as Organization;
+        setOrganization(orgData);
 
-        if (orgData) {
-          setOrganization(orgData);
+        // If the organisation is not approved, no need to fetch missions
+        if (orgData.status !== 'approved') {
+          setLoading(false);
+          return;
         }
 
         // Get organization's missions
         const { data: missionData } = await supabase
           .from('missions')
           .select('*')
-          .eq('organization_id', orgMember.organization_id)
+          .eq('organization_id', orgData.id)
           .order('created_at', { ascending: false });
 
         if (missionData) {
@@ -109,6 +109,27 @@ const OrganisationDashboard = () => {
     );
   }
 
+  // Render pending verification message if not approved
+  if (organization && organization.status !== 'approved') {
+    return (
+        <Card className="mt-4">
+            <CardHeader className="text-center">
+                <Hourglass className="mx-auto h-12 w-12 text-muted-foreground" />
+                <CardTitle className="mt-4">Verification Pending</CardTitle>
+            </CardHeader>
+            <CardContent className="text-center">
+                <p className="text-muted-foreground">
+                    Thank you for registering. Your organisation is currently under review by our admin team.
+                </p>
+                <p className="text-sm text-muted-foreground mt-2">
+                    You will be able to post missions and access the full dashboard once your account is approved.
+                </p>
+            </CardContent>
+        </Card>
+    );
+  }
+
+
   const activeMissions = missions.filter(m => m.status === 'open');
   const inProgressMissions = missions.filter(m => m.status === 'in_progress');
   const completedMissions = missions.filter(m => m.status === 'completed');
@@ -118,7 +139,7 @@ const OrganisationDashboard = () => {
       {/* Welcome Header */}
       <div className="space-y-2">
         <h1 className="text-3xl font-bold text-foreground">
-          {organization?.name || 'Organization'} Dashboard
+          {organization?.name || 'Organisation'} Dashboard
         </h1>
         <p className="text-muted-foreground">
           Manage your missions and connect with talented volunteers ready to help.
@@ -221,7 +242,7 @@ const OrganisationDashboard = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-sm text-foreground">
-                Post a new mission to connect with skilled volunteers who want to help your organization succeed.
+                Post a new mission to connect with skilled volunteers who want to help your organisation succeed.
               </p>
               <Button 
                 onClick={handlePostNewMission}
@@ -241,7 +262,7 @@ const OrganisationDashboard = () => {
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center space-x-2">
                 <TrendingUp className="w-5 h-5 text-primary" />
-                <span>Organization Impact</span>
+                <span>Organisation Impact</span>
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -291,7 +312,7 @@ const OrganisationDashboard = () => {
               </Button>
               <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => window.location.href = '/org-profile'}>
                 <TrendingUp className="w-4 h-4 mr-2" />
-                Organization Profile
+                Organisation Profile
               </Button>
             </CardContent>
           </Card>
