@@ -53,10 +53,10 @@ export const VolunteerManagement = () => {
     try {
       setLoading(true);
       // Call the new RPC function to securely get volunteer details
-      const { data, error } = await supabase.rpc('get_all_volunteers_with_details');
+      const { data, error } = await (supabase as any).rpc('get_all_volunteers_with_details');
 
       if (error) throw error;
-      setVolunteers(data || []);
+      setVolunteers((data as Volunteer[]) || []);
 
     } catch (error: any) {
       console.error('Error fetching volunteers:', error);
