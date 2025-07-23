@@ -34,7 +34,7 @@ interface MissionTemplate {
 interface Organization {
   id: string;
   name: string;
-  status: string; // Added status
+  status: string;
 }
 
 const operationNames = [
@@ -67,7 +67,6 @@ const CreateMission = () => {
       try {
         setLoading(true);
         
-        // Fetch user's organization and status first
         const { data: orgMemberData, error: orgMemberError } = await supabase
           .from('organization_members')
           .select('organizations ( id, name, status )')
@@ -81,7 +80,6 @@ const CreateMission = () => {
         const orgData = orgMemberData.organizations as Organization;
         setUserOrganization(orgData);
 
-        // If not approved, redirect to dashboard where they'll see the pending message
         if (orgData.status !== 'approved') {
           toast({
             title: 'Verification Required',
@@ -92,7 +90,6 @@ const CreateMission = () => {
           return;
         }
 
-        // Fetch Mission Templates
         const { data: templatesData, error: templatesError } = await supabase
           .from('mission_templates')
           .select('id, title, description, estimated_hours, difficulty_level')
