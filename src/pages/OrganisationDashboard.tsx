@@ -8,6 +8,7 @@ import { Plus, Users, CheckCircle, Clock, TrendingUp, Hourglass } from "lucide-r
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 
+// Explicitly define the types to match our database
 interface Mission {
   id: string;
   title: string;
@@ -21,7 +22,7 @@ interface Mission {
 interface Organization {
   id: string;
   name: string;
-  status: string; // Added status field
+  status: string;
 }
 
 const OrganisationDashboard = () => {
@@ -36,14 +37,13 @@ const OrganisationDashboard = () => {
       if (!user) return;
 
       try {
-        // Get user's organization and its status
-        const { data: orgMember } = await supabase
+        const { data: orgMember, error: orgMemberError } = await supabase
           .from('organization_members')
-          .select('organizations ( id, name, status )') // Fetch status along with id and name
+          .select('organizations ( id, name, status )')
           .eq('user_id', user.id)
           .single();
 
-        if (!orgMember || !orgMember.organizations) {
+        if (orgMemberError || !orgMember?.organizations) {
           toast({
             title: "No Organisation",
             description: "You are not associated with any organisation.",
@@ -56,27 +56,27 @@ const OrganisationDashboard = () => {
         const orgData = orgMember.organizations as Organization;
         setOrganization(orgData);
 
-        // If the organisation is not approved, no need to fetch missions
         if (orgData.status !== 'approved') {
           setLoading(false);
           return;
         }
 
-        // Get organization's missions
-        const { data: missionData } = await supabase
+        const { data: missionData, error: missionError } = await supabase
           .from('missions')
           .select('*')
           .eq('organization_id', orgData.id)
           .order('created_at', { ascending: false });
 
+        if (missionError) throw missionError;
+
         if (missionData) {
           setMissions(missionData);
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error fetching data:', error);
         toast({
           title: "Error",
-          description: "Failed to load dashboard data",
+          description: "Failed to load dashboard data: " + error.message,
           variant: "destructive"
         });
       } finally {
@@ -109,7 +109,6 @@ const OrganisationDashboard = () => {
     );
   }
 
-  // Render pending verification message if not approved
   if (organization && organization.status !== 'approved') {
     return (
         <Card className="mt-4">
@@ -129,14 +128,12 @@ const OrganisationDashboard = () => {
     );
   }
 
-
   const activeMissions = missions.filter(m => m.status === 'open');
   const inProgressMissions = missions.filter(m => m.status === 'in_progress');
   const completedMissions = missions.filter(m => m.status === 'completed');
 
   return (
     <div className="space-y-6">
-      {/* Welcome Header */}
       <div className="space-y-2">
         <h1 className="text-3xl font-bold text-foreground">
           {organization?.name || 'Organisation'} Dashboard
@@ -145,9 +142,7 @@ const OrganisationDashboard = () => {
           Manage your missions and connect with talented volunteers ready to help.
         </p>
       </div>
-
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column - Active Missions */}
         <div className="lg:col-span-2 space-y-6">
           <div>
             <div className="flex items-center justify-between mb-4">
@@ -157,7 +152,6 @@ const OrganisationDashboard = () => {
                 Post New Mission
               </Button>
             </div>
-            
             {activeMissions.length === 0 ? (
               <Card>
                 <CardContent className="pt-6 text-center">
@@ -196,7 +190,6 @@ const OrganisationDashboard = () => {
               </div>
             )}
           </div>
-
           {inProgressMissions.length > 0 && (
             <div>
               <h2 className="text-xl font-semibold mb-4">In Progress</h2>
@@ -218,7 +211,7 @@ const OrganisationDashboard = () => {
                           <Clock className="h-4 w-4" />
                           {mission.estimated_hours ? `${mission.estimated_hours}h` : 'TBD'}
                         </div>
-                        <Button size="sm" variant="outline" onClick={() => window.location.href = `/mission/${mission.id}`}>
+                        <Button size="sm" variant="outline" onClick={() => navigate(`/mission/${mission.id}`)}>
                           View Details
                         </Button>
                       </div>
@@ -229,10 +222,7 @@ const OrganisationDashboard = () => {
             </div>
           )}
         </div>
-
-        {/* Right Column - Stats & Actions */}
         <div className="space-y-6">
-          {/* Post New Mission CTA */}
           <Card className="bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20">
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center space-x-2 text-primary">
@@ -244,10 +234,7 @@ const OrganisationDashboard = () => {
               <p className="text-sm text-foreground">
                 Post a new mission to connect with skilled volunteers who want to help your organisation succeed.
               </p>
-              <Button 
-                onClick={handlePostNewMission}
-                className="w-full"
-              >
+              <Button onClick={handlePostNewMission} className="w-full">
                 <Plus className="w-4 h-4 mr-2" />
                 Post New Mission
               </Button>
@@ -256,8 +243,6 @@ const OrganisationDashboard = () => {
               </div>
             </CardContent>
           </Card>
-
-          {/* Organization Stats */}
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center space-x-2">
@@ -276,7 +261,6 @@ const OrganisationDashboard = () => {
                   <div className="text-xs text-muted-foreground">Completed</div>
                 </div>
               </div>
-              
               <div className="space-y-3">
                 <div className="flex justify-between">
                   <span className="text-sm text-muted-foreground">Active Missions</span>
@@ -295,22 +279,20 @@ const OrganisationDashboard = () => {
               </div>
             </CardContent>
           </Card>
-
-          {/* Quick Actions */}
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-base">Quick Actions</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => window.location.href = '/team-management'}>
+              <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => navigate('/team-management')}>
                 <Users className="w-4 h-4 mr-2" />
                 Manage Team Members
               </Button>
-              <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => window.location.href = '/org-missions'}>
-                <CheckCircle className="w-4 h-4 mr-2" />
+              <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => navigate('/org-missions')}>
+                <CheckCircle className="h-4 w-4 mr-2" />
                 Review Applications
               </Button>
-              <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => window.location.href = '/org-profile'}>
+              <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => navigate('/org-profile')}>
                 <TrendingUp className="w-4 h-4 mr-2" />
                 Organisation Profile
               </Button>
