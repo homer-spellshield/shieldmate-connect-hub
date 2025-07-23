@@ -32,7 +32,7 @@ export const OrganisationVerification = () => {
         .order('created_at', { ascending: true });
 
       if (error) throw error;
-      setOrganisations(data || []);
+      setOrganisations(data as Organisation[] || []);
     } catch (error: any) {
       toast({
         title: 'Error',
