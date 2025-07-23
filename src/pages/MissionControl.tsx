@@ -39,6 +39,8 @@ type MissionDetails = Database['public']['Tables']['missions']['Row'] & {
       skills: Pick<Database['public']['Tables']['skills']['Row'], 'name'> | null;
     }[];
   } | null;
+  org_closed?: boolean;
+  volunteer_closed?: boolean;
 };
 
 
@@ -189,7 +191,7 @@ const MissionControl = () => {
         const currentlyUpdatedMission = { ...mission, ...updateData };
 
         try {
-            const { error } = await supabase.from('missions').update(updateData).eq('id', missionId);
+            const { error } = await (supabase as any).from('missions').update(updateData).eq('id', missionId);
             if (error) throw error;
 
             setMission(currentlyUpdatedMission as MissionDetails);
