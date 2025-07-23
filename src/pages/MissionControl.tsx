@@ -58,6 +58,7 @@ const MissionControl = () => {
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const isOrganizationMember = userRoles.includes('organization_owner') || userRoles.includes('team_member');
+    const isVolunteer = userRoles.includes('volunteer');
 
     const getDisplayName = (p: ProfileInfo) => {
         const name = `${p?.first_name || ''} ${p?.last_name || ''}`.trim();
@@ -181,14 +182,26 @@ const MissionControl = () => {
         }
     };
 
-    const handleCompleteMission = async () => {
-        if (!missionId || mission?.status !== 'in_progress') return;
-        if (!window.confirm("Are you sure you want to mark this mission as complete? This action cannot be undone.")) return;
+    const handleMarkAsComplete = async () => {
+        if (!missionId || !user || mission?.status !== 'in_progress') return;
+
+        const updateData = isOrganizationMember ? { org_closed: true } : { volunteer_closed: true };
+        const currentlyUpdatedMission = { ...mission, ...updateData };
+
         try {
-            const { error } = await supabase.from('missions').update({ status: 'completed' }).eq('id', missionId);
+            const { error } = await supabase.from('missions').update(updateData).eq('id', missionId);
             if (error) throw error;
-            toast({ title: "Mission Complete!", description: "The mission has been successfully marked as completed." });
-            navigate('/org-missions');
+
+            setMission(currentlyUpdatedMission as MissionDetails);
+
+            if (currentlyUpdatedMission.org_closed && currentlyUpdatedMission.volunteer_closed) {
+                const { error: finalError } = await supabase.from('missions').update({ status: 'completed', closed_at: new Date().toISOString() }).eq('id', missionId);
+                if (finalError) throw finalError;
+                toast({ title: "Mission Complete!", description: "This mission has been successfully closed by both parties." });
+                await fetchAllData();
+            } else {
+                toast({ title: "Status Updated", description: "Awaiting confirmation from the other party to close the mission." });
+            }
         } catch (error: any) {
             toast({ title: "Error", description: `Failed to update mission status: ${error.message}`, variant: "destructive" });
         }
@@ -291,10 +304,24 @@ const MissionControl = () => {
                     <Card>
                         <CardHeader><CardTitle>Mission Actions</CardTitle></CardHeader>
                         <CardContent className="space-y-2">
-                            {isOrganizationMember && (
-                                <Button className="w-full" onClick={handleCompleteMission} disabled={mission.status !== 'in_progress'}>
-                                    <CheckCircle className="h-4 w-4 mr-2"/> Mark Mission as Complete
-                                </Button>
+                            {mission.status === 'in_progress' && (
+                              <>
+                                {(isOrganizationMember && !mission.org_closed) && (
+                                  <Button className="w-full" onClick={handleMarkAsComplete}>Mark as Complete</Button>
+                                )}
+                                {(isVolunteer && !mission.volunteer_closed) && (
+                                    <Button className="w-full" onClick={handleMarkAsComplete}>Mark as Complete</Button>
+                                )}
+                                
+                                {mission.org_closed && <p className="text-sm text-center text-muted-foreground">Organisation has marked as complete.</p>}
+                                {mission.volunteer_closed && <p className="text-sm text-center text-muted-foreground">Volunteer has marked as complete.</p>}
+                              </>
+                            )}
+                            {mission.status === 'completed' && (
+                                <div className="flex items-center justify-center p-4 bg-green-100/50 text-green-700 rounded-md">
+                                    <CheckCircle className="h-5 w-5 mr-2"/>
+                                    <p className="text-sm font-medium">Mission Completed</p>
+                                </div>
                             )}
                             <Button variant="outline" className="w-full">Request Help</Button>
                         </CardContent>
