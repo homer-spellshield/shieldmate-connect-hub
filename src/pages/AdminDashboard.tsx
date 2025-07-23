@@ -18,12 +18,13 @@ const AdminDashboard = () => {
       </div>
 
       <Tabs defaultValue="overview" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-5"> {/* Updated from grid-cols-4 to grid-cols-5 */}
+        <TabsList className="grid w-full grid-cols-5"> {/* This line should be grid-cols-5 */}
           <TabsTrigger value="overview" className="flex items-center gap-2">
             <BarChart3 className="h-4 w-4" />
             Overview
           </TabsTrigger>
-          <TabsTrigger value="verification" className="flex items-center gap-2"> {/* New Verification Tab */}
+          {/* This is the new tab you should be seeing */}
+          <TabsTrigger value="verification" className="flex items-center gap-2">
             <CheckSquare className="h-4 w-4" />
             Verification
           </TabsTrigger>
@@ -45,7 +46,8 @@ const AdminDashboard = () => {
           <SystemOverview />
         </TabsContent>
 
-        <TabsContent value="verification"> {/* New Verification Tab Content */}
+        {/* This is the content for the new tab */}
+        <TabsContent value="verification">
           <OrganisationVerification />
         </TabsContent>
 
