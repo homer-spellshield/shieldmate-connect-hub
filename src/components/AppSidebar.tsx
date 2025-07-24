@@ -3,6 +3,13 @@ import {
   Settings, 
   HelpCircle,
   BarChart3,
+  LayoutDashboard,
+  Briefcase,
+  FileText,
+  Users,
+  Award,
+  User,
+  Building
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import {
@@ -18,7 +25,29 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { useAuth } from "@/hooks/useAuth";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+
+// Define navigation items for each role
+const volunteerNavItems = [
+  { title: "Dashboard", url: "/", icon: LayoutDashboard },
+  { title: "Discover Missions", url: "/missions", icon: Briefcase },
+  { title: "My Applications", url: "/applications", icon: FileText },
+  { title: "My Profile", url: "/profile", icon: User },
+];
+
+const organisationNavItems = [
+  { title: "Dashboard", url: "/", icon: LayoutDashboard },
+  { title: "My Missions", url: "/org-missions", icon: Briefcase },
+  { title: "Team Management", url: "/team", icon: Users },
+  { title: "Organisation Profile", url: "/org-profile", icon: Building },
+];
+
+const adminNavItems = [
+  { title: "Dashboard", url: "/admin", icon: LayoutDashboard },
+  { title: "Verification", url: "/admin", value: "verification", icon: Shield },
+  { title: "Volunteers", url: "/admin", value: "volunteers", icon: Users },
+  { title: "Skills", url: "/admin", value: "skills", icon: Award },
+  { title: "Templates", url: "/admin", value: "mission_templates", icon: Briefcase },
+];
 
 const commonMenuItems = [
   { title: "Settings", url: "/settings", icon: Settings },
@@ -32,13 +61,26 @@ export function AppSidebar() {
   const collapsed = state === "collapsed";
 
   const isVolunteer = userRoles.includes('volunteer');
-  const isOrganizationUser = userRoles.includes('organization_owner') || userRoles.includes('team_member');
+  const isOrganisationUser = userRoles.includes('organization_owner') || userRoles.includes('team_member');
   const isSuperAdmin = userRoles.includes('super_admin');
   
   const isActive = (path: string) => location.pathname === path;
   
   const getNavClass = (isActive: boolean) => 
     isActive ? "bg-primary text-primary-foreground" : "hover:bg-accent hover:text-accent-foreground";
+
+  let navItems = [];
+  let portalTitle = "Portal";
+  if (isSuperAdmin) {
+    navItems = adminNavItems;
+    portalTitle = "Admin Portal";
+  } else if (isOrganisationUser) {
+    navItems = organisationNavItems;
+    portalTitle = "Organisation Portal";
+  } else if (isVolunteer) {
+    navItems = volunteerNavItems;
+    portalTitle = "Volunteer Portal";
+  }
 
   return (
     <Sidebar className={collapsed ? "w-16" : "w-64"} collapsible="icon">
@@ -51,44 +93,37 @@ export function AppSidebar() {
             <div>
               <h1 className="text-lg font-bold text-foreground">ShieldMate</h1>
               <p className="text-xs text-muted-foreground">
-                {isSuperAdmin ? "Admin Portal" : isVolunteer ? "Volunteer Portal" : "Organisation Portal"}
+                {portalTitle}
               </p>
             </div>
           )}
         </div>
       </SidebarHeader>
 
-      <SidebarContent>
-        {/* Admin-specific Sidebar content */}
-        {isSuperAdmin && !collapsed && (
-          <SidebarGroup>
-            <SidebarGroupLabel>System Status</SidebarGroupLabel>
-            <SidebarGroupContent className="px-2">
-                <Card className="border-none shadow-none bg-transparent">
-                  <CardHeader className="p-2 pt-0">
-                    <CardTitle className="flex items-center gap-2 text-base">
-                      <BarChart3 className="w-4 h-4" />
-                      System Health
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-2 pt-0 space-y-2">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-muted-foreground">Database</span>
-                      <span className="font-medium text-green-500">Connected</span>
-                    </div>
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-muted-foreground">Authentication</span>
-                      <span className="font-medium text-green-500">Active</span>
-                    </div>
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-muted-foreground">Row Level Security</span>
-                      <span className="font-medium text-green-500">Enabled</span>
-                    </div>
-                  </CardContent>
-                </Card>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        )}
+      <SidebarContent className="flex-1 flex flex-col justify-between">
+        {/* Main Navigation */}
+        <SidebarGroup>
+          <SidebarGroupLabel className={collapsed ? "sr-only" : ""}>
+            Navigation
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {navItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild>
+                    <Link 
+                      to={item.url}
+                      className={`nav-item ${getNavClass(isActive(item.url))}`}
+                    >
+                      <item.icon className="w-5 h-5" />
+                      {!collapsed && <span>{item.title}</span>}
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
 
         {/* Support Section */}
         <SidebarGroup>
