@@ -1,7 +1,11 @@
+-- Add a new mission status for the closure window
+ALTER TYPE public.mission_status ADD VALUE IF NOT EXISTS 'pending_closure';
+
 -- Add new columns to the missions table for tracking closure
 ALTER TABLE public.missions
 ADD COLUMN IF NOT EXISTS org_closed BOOLEAN DEFAULT false,
 ADD COLUMN IF NOT EXISTS volunteer_closed BOOLEAN DEFAULT false,
+ADD COLUMN IF NOT EXISTS closure_initiator_id UUID REFERENCES auth.users(id),
 ADD COLUMN IF NOT EXISTS closure_initiated_at TIMESTAMPTZ,
 ADD COLUMN IF NOT EXISTS closed_at TIMESTAMPTZ;
 
@@ -18,10 +22,11 @@ CREATE TABLE IF NOT EXISTS public.notifications (
 -- Enable RLS for the notifications table
 ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
 
--- RLS Policy: Users can only see their own notifications
-CREATE POLICY "Users can view their own notifications"
-ON public.notifications FOR SELECT
+-- RLS Policy: Users can only see and manage their own notifications
+CREATE POLICY "Users can manage their own notifications"
+ON public.notifications FOR ALL
 USING (auth.uid() = user_id);
+
 
 -- Create a new table for mission ratings
 CREATE TABLE IF NOT EXISTS public.mission_ratings (
@@ -48,3 +53,9 @@ USING (public.is_mission_participant(mission_id, auth.uid()));
 CREATE POLICY "Users can manage their own ratings"
 ON public.mission_ratings FOR ALL
 USING (auth.uid() = rater_user_id);
+
+-- Create trigger for automatic timestamp updates on ratings table
+CREATE TRIGGER update_mission_ratings_updated_at
+BEFORE UPDATE ON public.mission_ratings
+FOR EACH ROW
+EXECUTE FUNCTION public.update_updated_at_column();
