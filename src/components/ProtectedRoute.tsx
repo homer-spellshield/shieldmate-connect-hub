@@ -1,6 +1,7 @@
 import { ReactNode } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { Button } from '@/components/ui/button';
 
 interface ProtectedRouteProps {
   children: ReactNode;
@@ -14,6 +15,7 @@ export const ProtectedRoute = ({
   requiredRoles = [] 
 }: ProtectedRouteProps) => {
   const { user, loading, userRoles } = useAuth();
+  const navigate = useNavigate();
 
   if (loading) {
     return (
@@ -32,7 +34,8 @@ export const ProtectedRoute = ({
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <h2 className="text-2xl font-bold mb-2">Access Denied</h2>
-          <p className="text-muted-foreground">You don't have permission to access this page.</p>
+          <p className="text-muted-foreground mb-4">You don't have permission to access this page.</p>
+          <Button onClick={() => navigate('/')}>Return to Dashboard</Button>
         </div>
       </div>
     );

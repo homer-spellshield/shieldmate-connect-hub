@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      // THIS IS THE NEWLY ADDED TABLE DEFINITION
+      notifications: {
+        Row: {
+          id: string
+          user_id: string
+          message: string
+          link_url: string | null
+          is_read: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          message: string
+          link_url?: string | null
+          is_read?: boolean
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          message?: string
+          link_url?: string | null
+          is_read?: boolean
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
       mission_applications: {
         Row: {
           application_message: string | null

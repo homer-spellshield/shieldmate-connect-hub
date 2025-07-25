@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useState } from "react";
+import { ReactNode, useEffect, useState, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
@@ -10,6 +10,7 @@ import { Moon, Sun, LogOut, User, Bell } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDistanceToNow } from 'date-fns';
+import { useToast } from "@/hooks/use-toast";
 
 interface Notification {
   id: string;
@@ -22,10 +23,11 @@ interface Notification {
 export const Layout = ({ children }: { children: ReactNode }) => {
   const { profile, signOut, user } = useAuth();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
 
-  const fetchNotifications = async () => {
+  const fetchNotifications = useCallback(async () => {
     if (!user) return;
     const { data, error } = await supabase
       .from('notifications')
@@ -36,12 +38,17 @@ export const Layout = ({ children }: { children: ReactNode }) => {
 
     if (error) {
       console.error("Error fetching notifications:", error);
+      toast({
+        title: "Error",
+        description: "Could not fetch notifications.",
+        variant: "destructive",
+      });
     } else {
       setNotifications(data || []);
       const unread = data?.filter(n => !n.is_read).length || 0;
       setUnreadCount(unread);
     }
-  };
+  }, [user, toast]);
 
   useEffect(() => {
     if (user) {
@@ -60,7 +67,7 @@ export const Layout = ({ children }: { children: ReactNode }) => {
         supabase.removeChannel(channel);
       };
     }
-  }, [user]);
+  }, [user, fetchNotifications]);
 
 
   const handleNotificationClick = async (notification: Notification) => {
@@ -149,7 +156,7 @@ export const Layout = ({ children }: { children: ReactNode }) => {
                       <Button variant="ghost" size="sm" className="flex items-center space-x-2 h-8">
                         <div className="w-7 h-7 bg-primary rounded-full flex items-center justify-center">
                           <span className="text-primary-foreground text-xs font-medium">
-                            {profile?.first_name?.[0]}{profile?.last_name?.[0]}
+                            {`${profile?.first_name?.[0] || ''}${profile?.last_name?.[0] || ''}`}
                           </span>
                         </div>
                         <span className="hidden md:block text-sm font-medium">
