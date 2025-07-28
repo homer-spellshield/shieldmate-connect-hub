@@ -286,7 +286,8 @@ const OrganisationDashboard = () => {
               <CardTitle className="text-base">Quick Actions</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => navigate('/team-management')}>
+              {/* THIS IS THE FIX: Changed '/team-management' to '/team' */}
+              <Button variant="outline" size="sm" className="w-full justify-start" onClick={() => navigate('/team')}>
                 <Users className="h-4 w-4 mr-2" />
                 Manage Team Members
               </Button>
