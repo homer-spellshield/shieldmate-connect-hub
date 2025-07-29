@@ -5,13 +5,16 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Paperclip, Send, Briefcase, Clock, BarChart3, Users, FileText, Download, Trash2, CheckCircle } from "lucide-react";
+import { Paperclip, Send, Briefcase, Clock, BarChart3, Users, FileText, Download, Trash2, CheckCircle, Star } from "lucide-react";
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatDistanceToNow } from 'date-fns';
 import type { Database } from '@/integrations/supabase/types';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
 
 // --- TYPE DEFINITIONS ---
 type ProfileInfo = {
@@ -29,6 +32,10 @@ type MissionFile = Database['public']['Tables']['mission_files']['Row'] & {
   profiles: ProfileInfo;
 };
 
+type MissionRating = Database['public']['Tables']['mission_ratings']['Row'] & {
+    profiles: ProfileInfo
+};
+
 type MissionDetails = Database['public']['Tables']['missions']['Row'] & {
   organizations: Pick<Database['public']['Tables']['organizations']['Row'], 'id' | 'name'> | null;
   mission_applications: {
@@ -43,6 +50,22 @@ type MissionDetails = Database['public']['Tables']['missions']['Row'] & {
   volunteer_closed?: boolean;
 };
 
+const StarRating = ({ rating, setRating, disabled = false }: { rating: number; setRating: (rating: number) => void; disabled?: boolean }) => (
+    <div className="flex space-x-1">
+        {[1, 2, 3, 4, 5].map((star) => (
+            <Star
+                key={star}
+                className={cn(
+                    "h-6 w-6",
+                    rating >= star ? "text-yellow-400 fill-yellow-400" : "text-muted-foreground",
+                    !disabled && "cursor-pointer"
+                )}
+                onClick={() => !disabled && setRating(star)}
+            />
+        ))}
+    </div>
+);
+
 
 const MissionControl = () => {
     const { missionId } = useParams<{ missionId: string }>();
@@ -53,14 +76,20 @@ const MissionControl = () => {
     const [mission, setMission] = useState<MissionDetails | null>(null);
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [missionFiles, setMissionFiles] = useState<MissionFile[]>([]);
+    const [ratings, setRatings] = useState<MissionRating[]>([]);
     const [newMessage, setNewMessage] = useState("");
     const [loading, setLoading] = useState(true);
     const [uploading, setUploading] = useState(false);
+    const [isRatingOpen, setIsRatingOpen] = useState(false);
+    const [rating, setRating] = useState(0);
+    const [review, setReview] = useState("");
+    
     const chatContainerRef = useRef<HTMLDivElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const isOrganizationMember = userRoles.includes('organization_owner') || userRoles.includes('team_member');
     const isVolunteer = userRoles.includes('volunteer');
+    const userHasRated = ratings.some(r => r.rater_user_id === user?.id);
 
     const getDisplayName = (p: ProfileInfo) => {
         const name = `${p?.first_name || ''} ${p?.last_name || ''}`.trim();
@@ -69,17 +98,23 @@ const MissionControl = () => {
 
     const fetchAllData = async () => {
         if (!missionId || !user) return;
+        setLoading(true);
         try {
-            setLoading(true);
             const { data: missionData, error: missionError } = await supabase.from('missions').select(`*, organizations ( id, name ), mission_applications ( profiles ( user_id, first_name, last_name, email ) ), mission_templates ( mission_template_skills ( skills ( name ) ) )`).eq('id', missionId).single();
             if (missionError) throw missionError;
             setMission(missionData as any);
-            const { data: messagesData, error: messagesError } = await supabase.from('mission_messages').select('*, profiles ( user_id, first_name, last_name, email )').eq('mission_id', missionId).order('created_at');
-            if (messagesError) throw messagesError;
-            setMessages(messagesData as any || []);
-            const { data: filesData, error: filesError } = await supabase.from('mission_files').select('*, profiles ( user_id, first_name, last_name, email )').eq('mission_id', missionId).order('created_at', { ascending: false });
-            if (filesError) throw filesError;
-            setMissionFiles(filesData as any || []);
+
+            const [messagesRes, filesRes, ratingsRes] = await Promise.all([
+                supabase.from('mission_messages').select('*, profiles ( user_id, first_name, last_name, email )').eq('mission_id', missionId).order('created_at'),
+                supabase.from('mission_files').select('*, profiles ( user_id, first_name, last_name, email )').eq('mission_id', missionId).order('created_at', { ascending: false }),
+                supabase.from('mission_ratings').select('*, profiles!mission_ratings_rater_user_id_fkey ( user_id, first_name, last_name, email )').eq('mission_id', missionId)
+            ]);
+            if (messagesRes.error) throw messagesRes.error;
+            setMessages(messagesRes.data as any || []);
+            if (filesRes.error) throw filesRes.error;
+            setMissionFiles(filesRes.data as any || []);
+            if (ratingsRes.error) throw ratingsRes.error;
+            setRatings(ratingsRes.data as any || []);
         } catch (error: any) {
             toast({ title: "Error", description: "Failed to load mission data: " + error.message, variant: "destructive" });
         } finally {
@@ -90,7 +125,7 @@ const MissionControl = () => {
     useEffect(() => {
         fetchAllData();
     }, [missionId, user, toast]);
-
+    
     useEffect(() => {
         if (!missionId) return;
         const channel = supabase.channel(`mission-control:${missionId}`)
@@ -100,6 +135,8 @@ const MissionControl = () => {
                 setMessages(currentMessages => [...currentMessages, { ...payload.new, profiles: data } as ChatMessage]);
             })
             .on('postgres_changes', { event: '*', schema: 'public', table: 'mission_files', filter: `mission_id=eq.${missionId}`}, () => fetchAllData())
+            .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'missions', filter: `id=eq.${missionId}`}, () => fetchAllData())
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'mission_ratings', filter: `mission_id=eq.${missionId}`}, () => fetchAllData())
             .subscribe();
         return () => { supabase.removeChannel(channel); };
     }, [missionId, user]);
@@ -185,29 +222,51 @@ const MissionControl = () => {
     };
 
     const handleMarkAsComplete = async () => {
-        if (!missionId || !user || mission?.status !== 'in_progress') return;
-
-        const updateData = isOrganizationMember ? { org_closed: true } : { volunteer_closed: true };
-        const currentlyUpdatedMission = { ...mission, ...updateData };
-
+        if (!missionId) return;
         try {
-            const { error } = await (supabase as any).from('missions').update(updateData).eq('id', missionId);
+            const { error } = await supabase.functions.invoke('initiate-mission-closure', {
+                body: { mission_id: missionId },
+            });
             if (error) throw error;
-
-            setMission(currentlyUpdatedMission as MissionDetails);
-
-            if (currentlyUpdatedMission.org_closed && currentlyUpdatedMission.volunteer_closed) {
-                const { error: finalError } = await supabase.from('missions').update({ status: 'completed', closed_at: new Date().toISOString() }).eq('id', missionId);
-                if (finalError) throw finalError;
-                toast({ title: "Mission Complete!", description: "This mission has been successfully closed by both parties." });
-                await fetchAllData();
-            } else {
-                toast({ title: "Status Updated", description: "Awaiting confirmation from the other party to close the mission." });
-            }
+            toast({ title: "Status Updated", description: "Awaiting confirmation from the other party to close the mission." });
+            await fetchAllData();
         } catch (error: any) {
             toast({ title: "Error", description: `Failed to update mission status: ${error.message}`, variant: "destructive" });
         }
     };
+    
+    const handleSubmitRating = async () => {
+        if (!mission || !user || !missionId) return;
+        const volunteerProfile = mission.mission_applications?.find(app => app.profiles)?.profiles;
+        if (!volunteerProfile) return;
+    
+        const raterIsVolunteer = user.id === volunteerProfile.user_id;
+        const ratedUserId = raterIsVolunteer ? mission.organizations?.id : volunteerProfile.user_id;
+    
+        if (!ratedUserId) {
+            toast({ title: "Error", description: "Could not identify the user to rate.", variant: "destructive" });
+            return;
+        }
+    
+        try {
+            const { error } = await supabase.from('mission_ratings').insert({
+                mission_id: missionId,
+                rater_user_id: user.id,
+                rated_user_id: ratedUserId,
+                rating: rating,
+                review_text: review,
+            });
+            if (error) throw error;
+            toast({ title: "Success", description: "Your review has been submitted." });
+            setIsRatingOpen(false);
+            setRating(0);
+            setReview("");
+            fetchAllData();
+        } catch (error: any) {
+            toast({ title: "Error", description: `Failed to submit review: ${error.message}`, variant: "destructive" });
+        }
+    };
+    
 
     if (loading) return <MissionControlSkeleton />;
     if (!mission) return <div className="text-center p-8">Mission Not Found or Access Denied.</div>;
@@ -255,8 +314,8 @@ const MissionControl = () => {
                                 })}
                             </div>
                             <form onSubmit={handleSendMessage} className="flex items-center gap-2">
-                                <Input placeholder="Type your message..." value={newMessage} onChange={(e) => setNewMessage(e.target.value)} />
-                                <Button type="submit"><Send className="h-4 w-4" /></Button>
+                                <Input placeholder="Type your message..." value={newMessage} onChange={(e) => setNewMessage(e.target.value)} disabled={mission.status === 'completed'} />
+                                <Button type="submit" disabled={mission.status === 'completed'}><Send className="h-4 w-4" /></Button>
                             </form>
                         </CardContent>
                     </Card>
@@ -264,7 +323,7 @@ const MissionControl = () => {
                     <Card>
                         <CardHeader><CardTitle>File Repository</CardTitle></CardHeader>
                         <CardContent>
-                            <Button onClick={handleFileSelect} disabled={uploading} className="mb-4">
+                            <Button onClick={handleFileSelect} disabled={uploading || mission.status === 'completed'} className="mb-4">
                                 <Paperclip className="h-4 w-4 mr-2"/> {uploading ? 'Uploading...' : 'Upload File'}
                             </Button>
                             <input type="file" ref={fileInputRef} onChange={handleUpload} className="hidden" />
@@ -282,7 +341,7 @@ const MissionControl = () => {
                                         </div>
                                         <div className="flex items-center gap-2">
                                             <Button variant="ghost" size="icon" onClick={() => handleDownload(file.file_path, file.file_name)}><Download className="h-4 w-4"/></Button>
-                                            {file.user_id === user?.id && <Button variant="ghost" size="icon" onClick={() => handleDelete(file)}><Trash2 className="h-4 w-4 text-destructive"/></Button>}
+                                            {file.user_id === user?.id && <Button variant="ghost" size="icon" onClick={() => handleDelete(file)} disabled={mission.status === 'completed'}><Trash2 className="h-4 w-4 text-destructive"/></Button>}
                                         </div>
                                     </div>
                                 ))}
@@ -320,14 +379,59 @@ const MissionControl = () => {
                               </>
                             )}
                             {mission.status === 'completed' && (
+                                <>
                                 <div className="flex items-center justify-center p-4 bg-green-100/50 text-green-700 rounded-md">
                                     <CheckCircle className="h-5 w-5 mr-2"/>
                                     <p className="text-sm font-medium">Mission Completed</p>
                                 </div>
+                                {!userHasRated ? (
+                                    <Dialog open={isRatingOpen} onOpenChange={setIsRatingOpen}>
+                                        <DialogTrigger asChild>
+                                            <Button className="w-full mt-2" variant="outline">Rate Your Experience</Button>
+                                        </DialogTrigger>
+                                        <DialogContent>
+                                            <DialogHeader>
+                                                <DialogTitle>Rate Your Experience</DialogTitle>
+                                                <DialogDescription>Let others know how it went working with {isVolunteer ? mission.organizations?.name : volunteerName}.</DialogDescription>
+                                            </DialogHeader>
+                                            <div className="space-y-4 py-4">
+                                                <div className="space-y-2">
+                                                    <Label>Rating</Label>
+                                                    <StarRating rating={rating} setRating={setRating} />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <Label>Review (Optional)</Label>
+                                                    <Textarea value={review} onChange={(e) => setReview(e.target.value)} placeholder="Share your feedback..."/>
+                                                </div>
+                                            </div>
+                                            <Button onClick={handleSubmitRating} disabled={rating === 0}>Submit Review</Button>
+                                        </DialogContent>
+                                    </Dialog>
+                                ) : (
+                                    <p className="text-sm text-center text-muted-foreground pt-2">Thank you for your feedback!</p>
+                                )}
+                                </>
                             )}
                             <Button variant="outline" className="w-full">Request Help</Button>
                         </CardContent>
                     </Card>
+                    
+                    {ratings.length > 0 && (
+                        <Card>
+                            <CardHeader><CardTitle>Mission Reviews</CardTitle></CardHeader>
+                            <CardContent className="space-y-4">
+                                {ratings.map(r => (
+                                    <div key={r.id} className="border-b pb-2 last:border-b-0">
+                                        <div className="flex items-center justify-between">
+                                            <p className="font-semibold text-sm">{getDisplayName(r.profiles)}</p>
+                                            <StarRating rating={r.rating} setRating={() => {}} disabled={true} />
+                                        </div>
+                                        <p className="text-sm text-muted-foreground italic mt-1">"{r.review_text}"</p>
+                                    </div>
+                                ))}
+                            </CardContent>
+                        </Card>
+                    )}
                 </div>
             </div>
         </div>
