@@ -15,6 +15,7 @@ import type { Database } from '@/integrations/supabase/types';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { cn } from "@/lib/utils"; // <-- FIXED: Added missing import
 
 // --- TYPE DEFINITIONS ---
 type ProfileInfo = {
@@ -241,7 +242,7 @@ const MissionControl = () => {
         if (!volunteerProfile) return;
     
         const raterIsVolunteer = user.id === volunteerProfile.user_id;
-        const ratedUserId = raterIsVolunteer ? mission.organizations?.id : volunteerProfile.user_id;
+        const ratedUserId = raterIsVolunteer ? (mission.organizations as any)?.id : volunteerProfile.user_id;
     
         if (!ratedUserId) {
             toast({ title: "Error", description: "Could not identify the user to rate.", variant: "destructive" });
