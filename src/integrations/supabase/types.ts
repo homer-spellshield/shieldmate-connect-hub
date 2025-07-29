@@ -14,7 +14,61 @@ export type Database = {
   }
   public: {
     Tables: {
-      // THIS IS THE NEWLY ADDED TABLE DEFINITION
+      mission_ratings: {
+        Row: {
+          id: string
+          mission_id: string
+          rater_user_id: string
+          rated_user_id: string
+          rating: number
+          review_text: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          mission_id: string
+          rater_user_id: string
+          rated_user_id: string
+          rating: number
+          review_text?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          mission_id?: string
+          rater_user_id?: string
+          rated_user_id?: string
+          rating?: number
+          review_text?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mission_ratings_mission_id_fkey"
+            columns: ["mission_id"]
+            isOneToOne: false
+            referencedRelation: "missions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mission_ratings_rater_user_id_fkey"
+            columns: ["rater_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mission_ratings_rated_user_id_fkey"
+            columns: ["rated_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
       notifications: {
         Row: {
           id: string
@@ -522,7 +576,6 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      // **MODIFICATION: Added the new RPC function definition here**
       get_team_members: {
         Args: {
           org_id: string
