@@ -15,7 +15,7 @@ import type { Database } from '@/integrations/supabase/types';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { cn } from "@/lib/utils"; // <-- FIXED: Added missing import
+import { cn } from "@/lib/utils";
 
 // --- TYPE DEFINITIONS ---
 type ProfileInfo = {
@@ -40,6 +40,7 @@ type MissionRating = Database['public']['Tables']['mission_ratings']['Row'] & {
 type MissionDetails = Database['public']['Tables']['missions']['Row'] & {
   organizations: Pick<Database['public']['Tables']['organizations']['Row'], 'id' | 'name'> | null;
   mission_applications: {
+    status: string;
     profiles: (Pick<Database['public']['Tables']['profiles']['Row'], 'user_id' | 'first_name' | 'last_name'> & { email?: string | null }) | null;
   }[];
   mission_templates: {
@@ -101,7 +102,7 @@ const MissionControl = () => {
         if (!missionId || !user) return;
         setLoading(true);
         try {
-            const { data: missionData, error: missionError } = await supabase.from('missions').select(`*, organizations ( id, name ), mission_applications ( profiles ( user_id, first_name, last_name, email ) ), mission_templates ( mission_template_skills ( skills ( name ) ) )`).eq('id', missionId).single();
+            const { data: missionData, error: missionError } = await supabase.from('missions').select(`*, organizations ( id, name ), mission_applications ( status, profiles ( user_id, first_name, last_name, email ) ), mission_templates ( mission_template_skills ( skills ( name ) ) )`).eq('id', missionId).single();
             if (missionError) throw missionError;
             setMission(missionData as any);
 
@@ -238,7 +239,8 @@ const MissionControl = () => {
     
     const handleSubmitRating = async () => {
         if (!mission || !user || !missionId) return;
-        const volunteerProfile = mission.mission_applications?.find(app => app.profiles)?.profiles;
+        const acceptedApplication = mission.mission_applications?.find(app => app.status === 'accepted');
+        const volunteerProfile = acceptedApplication?.profiles;
         if (!volunteerProfile) return;
     
         const raterIsVolunteer = user.id === volunteerProfile.user_id;
@@ -272,7 +274,7 @@ const MissionControl = () => {
     if (loading) return <MissionControlSkeleton />;
     if (!mission) return <div className="text-center p-8">Mission Not Found or Access Denied.</div>;
 
-    const volunteerProfile = mission.mission_applications?.find(app => app.profiles)?.profiles;
+    const volunteerProfile = mission.mission_applications?.find(app => app.status === 'accepted')?.profiles;
     const volunteerName = getDisplayName(volunteerProfile);
     const volunteerInitials = `${volunteerProfile?.first_name?.[0] || ''}${volunteerProfile?.last_name?.[0] || 'V'}`;
     const skills = mission.mission_templates?.mission_template_skills.map(s => s.skills?.name).filter(Boolean) as string[] || [];
