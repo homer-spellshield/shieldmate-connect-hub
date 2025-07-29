@@ -57,15 +57,15 @@ export type Database = {
             foreignKeyName: "mission_ratings_rater_user_id_fkey"
             columns: ["rater_user_id"]
             isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
           },
           {
             foreignKeyName: "mission_ratings_rated_user_id_fkey"
             columns: ["rated_user_id"]
             isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
           }
         ]
       }
