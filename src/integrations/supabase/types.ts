@@ -14,96 +14,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      mission_ratings: {
-        Row: {
-          id: string
-          mission_id: string
-          rater_user_id: string
-          rated_user_id: string
-          rating: number
-          review_text: string | null
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          mission_id: string
-          rater_user_id: string
-          rated_user_id: string
-          rating: number
-          review_text?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          mission_id?: string
-          rater_user_id?: string
-          rated_user_id?: string
-          rating?: number
-          review_text?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "mission_ratings_mission_id_fkey"
-            columns: ["mission_id"]
-            isOneToOne: false
-            referencedRelation: "missions"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "mission_ratings_rater_user_id_fkey"
-            columns: ["rater_user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["user_id"]
-          },
-          {
-            foreignKeyName: "mission_ratings_rated_user_id_fkey"
-            columns: ["rated_user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["user_id"]
-          }
-        ]
-      }
-      notifications: {
-        Row: {
-          id: string
-          user_id: string
-          message: string
-          link_url: string | null
-          is_read: boolean
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          user_id: string
-          message: string
-          link_url?: string | null
-          is_read?: boolean
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          user_id?: string
-          message?: string
-          link_url?: string | null
-          is_read?: boolean
-          created_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "notifications_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          }
-        ]
-      }
       mission_applications: {
         Row: {
           application_message: string | null
@@ -239,6 +149,61 @@ export type Database = {
           },
         ]
       }
+      mission_ratings: {
+        Row: {
+          created_at: string
+          id: string
+          mission_id: string
+          rated_user_id: string
+          rater_user_id: string
+          rating: number
+          review_text: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          mission_id: string
+          rated_user_id: string
+          rater_user_id: string
+          rating: number
+          review_text?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          mission_id?: string
+          rated_user_id?: string
+          rater_user_id?: string
+          rating?: number
+          review_text?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mission_ratings_mission_id_fkey"
+            columns: ["mission_id"]
+            isOneToOne: false
+            referencedRelation: "missions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mission_ratings_rated_user_id_fkey"
+            columns: ["rated_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "mission_ratings_rater_user_id_fkey"
+            columns: ["rater_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       mission_template_skills: {
         Row: {
           created_at: string
@@ -307,40 +272,52 @@ export type Database = {
       }
       missions: {
         Row: {
+          closed_at: string | null
+          closure_initiated_at: string | null
           created_at: string
           description: string
           difficulty_level: string | null
           estimated_hours: number | null
           id: string
+          org_closed: boolean | null
           organization_id: string
           status: string
           template_id: string
           title: string
           updated_at: string
+          volunteer_closed: boolean | null
         }
         Insert: {
+          closed_at?: string | null
+          closure_initiated_at?: string | null
           created_at?: string
           description: string
           difficulty_level?: string | null
           estimated_hours?: number | null
           id?: string
+          org_closed?: boolean | null
           organization_id: string
           status?: string
           template_id: string
           title: string
           updated_at?: string
+          volunteer_closed?: boolean | null
         }
         Update: {
+          closed_at?: string | null
+          closure_initiated_at?: string | null
           created_at?: string
           description?: string
           difficulty_level?: string | null
           estimated_hours?: number | null
           id?: string
+          org_closed?: boolean | null
           organization_id?: string
           status?: string
           template_id?: string
           title?: string
           updated_at?: string
+          volunteer_closed?: boolean | null
         }
         Relationships: [
           {
@@ -358,6 +335,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      notifications: {
+        Row: {
+          created_at: string
+          id: string
+          is_read: boolean | null
+          link_url: string | null
+          message: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_read?: boolean | null
+          link_url?: string | null
+          message: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_read?: boolean | null
+          link_url?: string | null
+          message?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       organization_members: {
         Row: {
@@ -393,6 +397,7 @@ export type Database = {
       }
       organizations: {
         Row: {
+          abn: string | null
           contact_email: string | null
           created_at: string
           description: string | null
@@ -402,11 +407,13 @@ export type Database = {
           logo_url: string | null
           mission_posts_this_month: number
           name: string
+          status: string | null
           subscription_tier: string
           updated_at: string
           website_url: string | null
         }
         Insert: {
+          abn?: string | null
           contact_email?: string | null
           created_at?: string
           description?: string | null
@@ -416,11 +423,13 @@ export type Database = {
           logo_url?: string | null
           mission_posts_this_month?: number
           name: string
+          status?: string | null
           subscription_tier?: string
           updated_at?: string
           website_url?: string | null
         }
         Update: {
+          abn?: string | null
           contact_email?: string | null
           created_at?: string
           description?: string | null
@@ -430,6 +439,7 @@ export type Database = {
           logo_url?: string | null
           mission_posts_this_month?: number
           name?: string
+          status?: string | null
           subscription_tier?: string
           updated_at?: string
           website_url?: string | null
@@ -576,18 +586,27 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_all_volunteers_with_details: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          id: string
+          email: string
+          first_name: string
+          last_name: string
+          bio: string
+          created_at: string
+        }[]
+      }
       get_team_members: {
-        Args: {
-          org_id: string
-        }
+        Args: { org_id: string }
         Returns: {
           id: string
           role: string
           user_id: string
-          first_name: string | null
-          last_name: string | null
-          email: string | null
-          avatar_url: string | null
+          first_name: string
+          last_name: string
+          email: string
+          avatar_url: string
         }[]
       }
       get_user_organizations: {

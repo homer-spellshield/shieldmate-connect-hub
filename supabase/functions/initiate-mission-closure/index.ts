@@ -68,17 +68,24 @@ serve(async (req: Request) => {
     let notificationUserId: string = '';
     let notificationMessage: string = '';
 
+    // Check if this is the first closure initiation
+    const isFirstClosure = !mission.org_closed && !mission.volunteer_closed;
+
     if (isVolunteer) {
       updateData.volunteer_closed = true;
-      notificationUserId = orgUserIds[0]; // Notify the first org member (can be improved to notify all owners)
-      notificationMessage = `The volunteer has marked mission "${mission.title}" as complete. Please review and confirm.`;
+      notificationUserId = orgUserIds[0]; // Notify the first org member
+      notificationMessage = `The volunteer has marked mission "${mission.title}" as complete. Please review and confirm within 3 days.`;
     } else { // Is Org Member
       updateData.org_closed = true;
       notificationUserId = volunteer_id;
-      notificationMessage = `The organization has marked mission "${mission.title}" as complete. Please review and confirm.`;
+      notificationMessage = `The organization has marked mission "${mission.title}" as complete. Please review and confirm within 3 days.`;
     }
 
-    updateData.closure_initiated_at = new Date().toISOString();
+    // Set closure initiated timestamp and status only on first closure
+    if (isFirstClosure) {
+      updateData.closure_initiated_at = new Date().toISOString();
+      updateData.status = 'pending_closure';
+    }
 
     // --- 5. Update mission and create notification ---
     const { data: updatedMission, error: updateError } = await supabaseAdmin

@@ -27,39 +27,107 @@ serve(async (_req: Request) => {
     const threeDaysAgo = new Date();
     threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
 
-    const { data: missionsToClose, error: queryError } = await supabaseAdmin
+    // Query for missions that need to be closed (3+ days in pending_closure)
+    const { data: missions, error: queryError } = await supabaseAdmin
       .from('missions')
-      .select('id, title')
+      .select(`
+        id, 
+        title, 
+        org_closed, 
+        volunteer_closed,
+        organization_id,
+        mission_applications(volunteer_id)
+      `)
       .eq('status', 'pending_closure')
       .lt('closure_initiated_at', threeDaysAgo.toISOString());
 
     if (queryError) throw queryError;
 
-    if (!missionsToClose || missionsToClose.length === 0) {
-      return new Response(JSON.stringify({ success: true, message: "No missions to close." }), {
+    if (!missions || missions.length === 0) {
+      console.log('No missions found that need to be closed');
+      return new Response(JSON.stringify({ 
+        success: true, 
+        message: 'No missions found that need to be closed',
+        processed: 0 
+      }), {
         status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...corsHeaders, "Content-Type": "application/json" }
       });
     }
 
-    const missionIds = missionsToClose.map(m => m.id);
+    console.log(`Found ${missions.length} missions to auto-close`);
 
-    const { error: updateError } = await supabaseAdmin
-      .from('missions')
-      .update({
-        status: 'completed',
-        closed_at: new Date().toISOString()
-      })
-      .in('id', missionIds);
+    // Process each mission individually for better error handling
+    const results = [];
+    for (const mission of missions) {
+      try {
+        // Update mission to completed
+        const { error: updateError } = await supabaseAdmin
+          .from('missions')
+          .update({ 
+            status: 'completed',
+            closed_at: new Date().toISOString()
+          })
+          .eq('id', mission.id);
 
-    if (updateError) throw updateError;
+        if (updateError) {
+          console.error(`Error updating mission ${mission.id}:`, updateError);
+          continue;
+        }
+
+        // Notify both parties about auto-closure
+        const volunteer_id = mission.mission_applications[0]?.volunteer_id;
+        
+        // Get organization members
+        const { data: orgMembers } = await supabaseAdmin
+          .from('organization_members')
+          .select('user_id')
+          .eq('organization_id', mission.organization_id);
+
+        const notifications = [];
+        
+        // Notify volunteer
+        if (volunteer_id) {
+          notifications.push({
+            user_id: volunteer_id,
+            message: `Mission "${mission.title}" has been automatically completed due to no response within 3 days.`,
+            link_url: `/mission/${mission.id}`
+          });
+        }
+
+        // Notify organization members
+        if (orgMembers) {
+          orgMembers.forEach(member => {
+            notifications.push({
+              user_id: member.user_id,
+              message: `Mission "${mission.title}" has been automatically completed due to no response within 3 days.`,
+              link_url: `/mission/${mission.id}`
+            });
+          });
+        }
+
+        // Insert notifications
+        if (notifications.length > 0) {
+          await supabaseAdmin.from('notifications').insert(notifications);
+        }
+
+        results.push({ id: mission.id, title: mission.title, status: 'completed' });
+        console.log(`Successfully auto-closed mission: ${mission.title}`);
+
+      } catch (error) {
+        console.error(`Error processing mission ${mission.id}:`, error);
+      }
+    }
+
+    console.log(`Successfully processed ${results.length} missions`);
     
-    return new Response(JSON.stringify({
-      success: true,
-      message: `Successfully closed ${missionIds.length} mission(s).`
+    return new Response(JSON.stringify({ 
+      success: true, 
+      processed: results.length,
+      missions: results 
     }), {
       status: 200,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      headers: { ...corsHeaders, "Content-Type": "application/json" }
     });
 
   } catch (error: any) {

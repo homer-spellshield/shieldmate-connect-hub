@@ -50,6 +50,7 @@ type MissionDetails = Database['public']['Tables']['missions']['Row'] & {
   } | null;
   org_closed?: boolean;
   volunteer_closed?: boolean;
+  closure_initiated_at?: string;
 };
 
 const StarRating = ({ rating, setRating, disabled = false }: { rating: number; setRating: (rating: number) => void; disabled?: boolean }) => (
@@ -380,6 +381,23 @@ const MissionControl = () => {
                                 {mission.org_closed && <p className="text-sm text-center text-muted-foreground">Organisation has marked as complete.</p>}
                                 {mission.volunteer_closed && <p className="text-sm text-center text-muted-foreground">Volunteer has marked as complete.</p>}
                               </>
+                            )}
+                            {mission.status === 'pending_closure' && (
+                              <div className="space-y-2">
+                                <div className="flex items-center justify-center p-4 bg-yellow-100/50 text-yellow-700 rounded-md">
+                                  <Clock className="h-5 w-5 mr-2"/>
+                                  <p className="text-sm font-medium">Awaiting Final Confirmation</p>
+                                </div>
+                                <p className="text-xs text-center text-muted-foreground">
+                                  {mission.closure_initiated_at && `Initiated ${formatDistanceToNow(new Date(mission.closure_initiated_at), { addSuffix: true })}. Auto-completes in 3 days if no response.`}
+                                </p>
+                                {(isOrganizationMember && !mission.org_closed) && (
+                                  <Button className="w-full" onClick={handleMarkAsComplete}>Confirm Completion</Button>
+                                )}
+                                {(isVolunteer && !mission.volunteer_closed) && (
+                                  <Button className="w-full" onClick={handleMarkAsComplete}>Confirm Completion</Button>
+                                )}
+                              </div>
                             )}
                             {mission.status === 'completed' && (
                                 <>
