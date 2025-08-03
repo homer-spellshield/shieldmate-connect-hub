@@ -514,6 +514,7 @@ export type Database = {
           category: string | null
           created_at: string
           description: string | null
+          domain: string | null
           id: string
           name: string
         }
@@ -521,6 +522,7 @@ export type Database = {
           category?: string | null
           created_at?: string
           description?: string | null
+          domain?: string | null
           id?: string
           name: string
         }
@@ -528,6 +530,7 @@ export type Database = {
           category?: string | null
           created_at?: string
           description?: string | null
+          domain?: string | null
           id?: string
           name?: string
         }

@@ -42,11 +42,7 @@ const organisationNavItems = [
 ];
 
 const adminNavItems = [
-  { title: "Dashboard", url: "/admin", icon: LayoutDashboard },
-  { title: "Verification", url: "/admin", value: "verification", icon: Shield },
-  { title: "Volunteers", url: "/admin", value: "volunteers", icon: Users },
-  { title: "Skills", url: "/admin", value: "skills", icon: Award },
-  { title: "Templates", url: "/admin", value: "mission_templates", icon: Briefcase },
+  { title: "Admin Dashboard", url: "/admin", icon: LayoutDashboard },
 ];
 
 const commonMenuItems = [
