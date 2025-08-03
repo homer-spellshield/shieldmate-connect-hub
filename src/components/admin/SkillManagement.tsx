@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
@@ -276,20 +277,48 @@ export const SkillManagement = () => {
                       <TableCell>
                         {new Date(skill.created_at).toLocaleDateString()}
                       </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Button variant="outline" size="sm">
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => handleDeleteSkill(skill.id)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
+                       <TableCell>
+                         <div className="flex items-center gap-2">
+                           <Button 
+                             variant="outline" 
+                             size="sm"
+                             onClick={() => {
+                               // TODO: Implement edit functionality
+                               toast({ 
+                                 title: "Not Implemented", 
+                                 description: "Skill editing functionality will be added soon.", 
+                                 variant: "default" 
+                               });
+                             }}
+                           >
+                             <Edit className="h-4 w-4" />
+                           </Button>
+                           <AlertDialog>
+                             <AlertDialogTrigger asChild>
+                               <Button variant="outline" size="sm">
+                                 <Trash2 className="h-4 w-4" />
+                               </Button>
+                             </AlertDialogTrigger>
+                             <AlertDialogContent>
+                               <AlertDialogHeader>
+                                 <AlertDialogTitle>Delete Skill</AlertDialogTitle>
+                                 <AlertDialogDescription>
+                                   Are you sure you want to delete "{skill.name}"? This action cannot be undone.
+                                 </AlertDialogDescription>
+                               </AlertDialogHeader>
+                               <AlertDialogFooter>
+                                 <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                 <AlertDialogAction 
+                                   onClick={() => handleDeleteSkill(skill.id)}
+                                   className="bg-destructive hover:bg-destructive/90"
+                                 >
+                                   Delete
+                                 </AlertDialogAction>
+                               </AlertDialogFooter>
+                             </AlertDialogContent>
+                           </AlertDialog>
+                         </div>
+                       </TableCell>
                     </TableRow>
                   ))
                 )}

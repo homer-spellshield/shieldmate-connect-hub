@@ -13,6 +13,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { formatDistanceToNow } from 'date-fns';
 import type { Database } from '@/integrations/supabase/types';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { cn } from "@/lib/utils";
@@ -212,7 +213,6 @@ const MissionControl = () => {
     };
 
     const handleDelete = async (file: MissionFile) => {
-        if (!window.confirm(`Are you sure you want to delete ${file.file_name}?`)) return;
         try {
             const { error: storageError } = await supabase.storage.from('mission-files').remove([file.file_path]);
             if (storageError) throw storageError;
@@ -345,7 +345,32 @@ const MissionControl = () => {
                                         </div>
                                         <div className="flex items-center gap-2">
                                             <Button variant="ghost" size="icon" onClick={() => handleDownload(file.file_path, file.file_name)}><Download className="h-4 w-4"/></Button>
-                                            {file.user_id === user?.id && <Button variant="ghost" size="icon" onClick={() => handleDelete(file)} disabled={mission.status === 'completed'}><Trash2 className="h-4 w-4 text-destructive"/></Button>}
+                                            {file.user_id === user?.id && (
+                                              <AlertDialog>
+                                                <AlertDialogTrigger asChild>
+                                                  <Button variant="ghost" size="icon" disabled={mission.status === 'completed'}>
+                                                    <Trash2 className="h-4 w-4 text-destructive"/>
+                                                  </Button>
+                                                </AlertDialogTrigger>
+                                                <AlertDialogContent>
+                                                  <AlertDialogHeader>
+                                                    <AlertDialogTitle>Delete File</AlertDialogTitle>
+                                                    <AlertDialogDescription>
+                                                      Are you sure you want to delete "{file.file_name}"? This action cannot be undone.
+                                                    </AlertDialogDescription>
+                                                  </AlertDialogHeader>
+                                                  <AlertDialogFooter>
+                                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                    <AlertDialogAction 
+                                                      onClick={() => handleDelete(file)}
+                                                      className="bg-destructive hover:bg-destructive/90"
+                                                    >
+                                                      Delete
+                                                    </AlertDialogAction>
+                                                  </AlertDialogFooter>
+                                                </AlertDialogContent>
+                                              </AlertDialog>
+                                            )}
                                         </div>
                                     </div>
                                 ))}
@@ -372,10 +397,46 @@ const MissionControl = () => {
                             {mission.status === 'in_progress' && (
                               <>
                                 {(isOrganizationMember && !mission.org_closed) && (
-                                  <Button className="w-full" onClick={handleMarkAsComplete}>Mark as Complete</Button>
+                                  <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                      <Button className="w-full">Mark as Complete</Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                      <AlertDialogHeader>
+                                        <AlertDialogTitle>Mark Mission as Complete</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                          Are you sure you want to mark this mission as complete? This will notify the volunteer and begin the closure process.
+                                        </AlertDialogDescription>
+                                      </AlertDialogHeader>
+                                      <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                        <AlertDialogAction onClick={handleMarkAsComplete}>
+                                          Yes, Mark Complete
+                                        </AlertDialogAction>
+                                      </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                  </AlertDialog>
                                 )}
                                 {(isVolunteer && !mission.volunteer_closed) && (
-                                    <Button className="w-full" onClick={handleMarkAsComplete}>Mark as Complete</Button>
+                                  <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                      <Button className="w-full">Mark as Complete</Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                      <AlertDialogHeader>
+                                        <AlertDialogTitle>Mark Mission as Complete</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                          Are you sure you want to mark this mission as complete? This will notify the organization and begin the closure process.
+                                        </AlertDialogDescription>
+                                      </AlertDialogHeader>
+                                      <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                        <AlertDialogAction onClick={handleMarkAsComplete}>
+                                          Yes, Mark Complete
+                                        </AlertDialogAction>
+                                      </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                  </AlertDialog>
                                 )}
                                 
                                 {mission.org_closed && <p className="text-sm text-center text-muted-foreground">Organisation has marked as complete.</p>}
@@ -392,10 +453,46 @@ const MissionControl = () => {
                                   {mission.closure_initiated_at && `Initiated ${formatDistanceToNow(new Date(mission.closure_initiated_at), { addSuffix: true })}. Auto-completes in 3 days if no response.`}
                                 </p>
                                 {(isOrganizationMember && !mission.org_closed) && (
-                                  <Button className="w-full" onClick={handleMarkAsComplete}>Confirm Completion</Button>
+                                  <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                      <Button className="w-full">Confirm Completion</Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                      <AlertDialogHeader>
+                                        <AlertDialogTitle>Confirm Mission Completion</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                          Are you sure you want to confirm the completion of this mission? This action will finalize the mission closure.
+                                        </AlertDialogDescription>
+                                      </AlertDialogHeader>
+                                      <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                        <AlertDialogAction onClick={handleMarkAsComplete}>
+                                          Yes, Confirm
+                                        </AlertDialogAction>
+                                      </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                  </AlertDialog>
                                 )}
                                 {(isVolunteer && !mission.volunteer_closed) && (
-                                  <Button className="w-full" onClick={handleMarkAsComplete}>Confirm Completion</Button>
+                                  <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                      <Button className="w-full">Confirm Completion</Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                      <AlertDialogHeader>
+                                        <AlertDialogTitle>Confirm Mission Completion</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                          Are you sure you want to confirm the completion of this mission? This action will finalize the mission closure.
+                                        </AlertDialogDescription>
+                                      </AlertDialogHeader>
+                                      <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                        <AlertDialogAction onClick={handleMarkAsComplete}>
+                                          Yes, Confirm
+                                        </AlertDialogAction>
+                                      </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                  </AlertDialog>
                                 )}
                               </div>
                             )}

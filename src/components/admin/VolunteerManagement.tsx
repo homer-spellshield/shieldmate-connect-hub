@@ -156,10 +156,23 @@ export const VolunteerManagement = () => {
 
   const handleDeleteConfirm = async () => {
     if (!volunteerToDelete) return;
-    // NOTE: This requires a secure Supabase Edge Function `admin-delete-user`.
-    toast({ title: "Placeholder", description: "Deletion functionality to be implemented." });
-    setIsAlertOpen(false);
-    setVolunteerToDelete(null);
+    
+    try {
+      // NOTE: This requires a secure Supabase Edge Function `admin-delete-user`.
+      toast({ 
+        title: "Not Implemented", 
+        description: "Volunteer deletion functionality requires an Edge Function to be created.", 
+        variant: "destructive" 
+      });
+      setIsAlertOpen(false);
+      setVolunteerToDelete(null);
+    } catch (error) {
+      toast({ 
+        title: "Error", 
+        description: "Failed to delete volunteer", 
+        variant: "destructive" 
+      });
+    }
   };
 
   // --- UTILITY ---
