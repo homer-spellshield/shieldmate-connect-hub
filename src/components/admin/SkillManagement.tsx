@@ -18,6 +18,7 @@ import { Plus, Edit, Trash2, Search } from 'lucide-react';
 const skillSchema = z.object({
   name: z.string().min(1, 'Skill name is required'),
   category: z.string().optional(),
+  domain: z.string().optional(),
   description: z.string().optional()
 });
 
@@ -27,6 +28,7 @@ interface Skill {
   id: string;
   name: string;
   category: string | null;
+  domain: string | null;
   description: string | null;
   created_at: string;
 }
@@ -36,6 +38,8 @@ export const SkillManagement = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingSkill, setEditingSkill] = useState<Skill | null>(null);
+  const [deleteSkillId, setDeleteSkillId] = useState<string | null>(null);
   const { toast } = useToast();
 
   const form = useForm<SkillForm>({
@@ -43,6 +47,7 @@ export const SkillManagement = () => {
     defaultValues: {
       name: '',
       category: '',
+      domain: '',
       description: ''
     }
   });
@@ -72,31 +77,74 @@ export const SkillManagement = () => {
     fetchSkills();
   }, []);
 
-  const handleCreateSkill = async (data: SkillForm) => {
-    try {
-      const { error } = await supabase
-        .from('skills')
-        .insert({
-          name: data.name,
-          category: data.category || null,
-          description: data.description || null
-        });
-
-      if (error) throw error;
-
-      toast({
-        title: 'Success',
-        description: 'Skill created successfully'
+  const handleOpenDialog = (skill: Skill | null = null) => {
+    setEditingSkill(skill);
+    if (skill) {
+      form.reset({
+        name: skill.name,
+        category: skill.category || '',
+        domain: skill.domain || '',
+        description: skill.description || ''
       });
+    } else {
+      form.reset({
+        name: '',
+        category: '',
+        domain: '',
+        description: ''
+      });
+    }
+    setIsDialogOpen(true);
+  };
+
+  const handleCreateOrUpdateSkill = async (data: SkillForm) => {
+    try {
+      if (editingSkill) {
+        // Update existing skill
+        const { error } = await supabase
+          .from('skills')
+          .update({
+            name: data.name,
+            category: data.category || null,
+            domain: data.domain || null,
+            description: data.description || null
+          })
+          .eq('id', editingSkill.id);
+
+        if (error) throw error;
+
+        toast({
+          title: 'Success',
+          description: 'Skill updated successfully'
+        });
+      } else {
+        // Create new skill
+        const { error } = await supabase
+          .from('skills')
+          .insert({
+            name: data.name,
+            category: data.category || null,
+            domain: data.domain || null,
+            description: data.description || null
+          });
+
+        if (error) throw error;
+
+        toast({
+          title: 'Success',
+          description: 'Skill created successfully'
+        });
+      }
 
       setIsDialogOpen(false);
+      setEditingSkill(null);
       form.reset();
       fetchSkills();
     } catch (error: any) {
-      console.error('Error creating skill:', error);
+      console.error('Error saving skill:', error);
       toast({
         title: 'Error',
-        description: error.message || 'Failed to create skill',
+        description: error.message || 'Failed to save skill',
         variant: 'destructive'
       });
     }
@@ -145,22 +193,28 @@ export const SkillManagement = () => {
                 Manage skills that can be assigned to volunteers
               </CardDescription>
             </div>
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <Dialog open={isDialogOpen} onOpenChange={(open) => {
+              setIsDialogOpen(open);
+              if (!open) {
+                setEditingSkill(null);
+                form.reset();
+              }
+            }}>
               <DialogTrigger asChild>
-                <Button>
+                <Button onClick={() => handleOpenDialog()}>
                   <Plus className="h-4 w-4 mr-2" />
                   Add Skill
                 </Button>
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>Create New Skill</DialogTitle>
+                  <DialogTitle>{editingSkill ? 'Edit Skill' : 'Create New Skill'}</DialogTitle>
                   <DialogDescription>
-                    Add a new skill to the system
+                    {editingSkill ? 'Update the skill information' : 'Add a new skill to the system'}
                   </DialogDescription>
                 </DialogHeader>
                 <Form {...form}>
-                  <form onSubmit={form.handleSubmit(handleCreateSkill)} className="space-y-4">
+                  <form onSubmit={form.handleSubmit(handleCreateOrUpdateSkill)} className="space-y-4">
                     <FormField
                       control={form.control}
                       name="name"
@@ -181,7 +235,20 @@ export const SkillManagement = () => {
                         <FormItem>
                           <FormLabel>Category (Optional)</FormLabel>
                           <FormControl>
-                            <Input {...field} placeholder="e.g., Frontend Development" />
+                            <Input {...field} placeholder="e.g., Cyber Security" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="domain"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Domain (Optional)</FormLabel>
+                          <FormControl>
+                            <Input {...field} placeholder="e.g., Security Operations (SecOps)" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -201,7 +268,7 @@ export const SkillManagement = () => {
                       )}
                     />
                     <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
-                      {form.formState.isSubmitting ? 'Creating...' : 'Create Skill'}
+                      {form.formState.isSubmitting ? (editingSkill ? 'Updating...' : 'Creating...') : (editingSkill ? 'Update Skill' : 'Create Skill')}
                     </Button>
                   </form>
                 </Form>
@@ -279,20 +346,13 @@ export const SkillManagement = () => {
                       </TableCell>
                        <TableCell>
                          <div className="flex items-center gap-2">
-                           <Button 
-                             variant="outline" 
-                             size="sm"
-                             onClick={() => {
-                               // TODO: Implement edit functionality
-                               toast({ 
-                                 title: "Not Implemented", 
-                                 description: "Skill editing functionality will be added soon.", 
-                                 variant: "default" 
-                               });
-                             }}
-                           >
-                             <Edit className="h-4 w-4" />
-                           </Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => handleOpenDialog(skill)}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
                            <AlertDialog>
                              <AlertDialogTrigger asChild>
                                <Button variant="outline" size="sm">
