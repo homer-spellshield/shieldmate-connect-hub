@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { supabase } from '@/integrations/supabase/client';
@@ -41,7 +41,7 @@ interface Skill {
   id: string;
   name: string;
   category: string | null;
-  domain: string | null; // Assuming you add this to your skills table
+  domain: string | null;
 }
 
 interface GroupedSkills {
@@ -53,7 +53,6 @@ interface GroupedSkills {
 // --- MAIN COMPONENT ---
 export const VolunteerManagement = () => {
   const [volunteers, setVolunteers] = useState<Volunteer[]>([]);
-  const [allSkills, setAllSkills] = useState<Skill[]>([]);
   const [groupedSkills, setGroupedSkills] = useState<GroupedSkills>({});
   const [volunteerSkills, setVolunteerSkills] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
@@ -83,9 +82,7 @@ export const VolunteerManagement = () => {
 
       setVolunteers((volunteersRes.data as Volunteer[]) || []);
       const skillsData = (skillsRes.data as Skill[]) || [];
-      setAllSkills(skillsData);
 
-      // Group skills for the UI
       const grouped = skillsData.reduce((acc, skill) => {
         const category = skill.category || 'General';
         const domain = skill.domain || 'Miscellaneous';
@@ -118,7 +115,6 @@ export const VolunteerManagement = () => {
         lastName: volunteer.last_name || '',
         bio: volunteer.bio || ''
       });
-      // Fetch this specific volunteer's skills
       const { data, error } = await supabase.from('volunteer_skills').select('skill_id').eq('volunteer_id', volunteer.id);
       if (error) toast({ title: 'Error', description: "Could not fetch volunteer's skills.", variant: 'destructive' });
       setVolunteerSkills(data?.map(s => s.skill_id) || []);
@@ -130,8 +126,27 @@ export const VolunteerManagement = () => {
   };
 
   const handleProfileSubmit = async (data: ProfileForm) => {
-    // NOTE: This requires a secure Supabase Edge Function `admin-update-user`.
-    toast({ title: "Placeholder", description: "Profile editing functionality to be implemented." });
+    try {
+      if (editingVolunteer) {
+        // UPDATE VOLUNTEER
+        const { error } = await supabase.functions.invoke('admin-update-user', {
+          body: { userId: editingVolunteer.id, ...data }
+        });
+        if (error) throw error;
+        toast({ title: 'Success', description: 'Volunteer updated successfully' });
+      } else {
+        // CREATE VOLUNTEER
+        const { error } = await supabase.functions.invoke('admin-create-user', {
+          body: { ...data, role: 'volunteer' }
+        });
+        if (error) throw error;
+        toast({ title: 'Success', description: 'Volunteer created successfully' });
+      }
+      setIsDialogOpen(false);
+      fetchData();
+    } catch (error: any) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    }
   };
 
   const handleSkillsSubmit = async () => {
@@ -156,22 +171,19 @@ export const VolunteerManagement = () => {
 
   const handleDeleteConfirm = async () => {
     if (!volunteerToDelete) return;
-    
     try {
-      // NOTE: This requires a secure Supabase Edge Function `admin-delete-user`.
-      toast({ 
-        title: "Not Implemented", 
-        description: "Volunteer deletion functionality requires an Edge Function to be created.", 
-        variant: "destructive" 
+      const { error } = await supabase.functions.invoke('admin-delete-user', {
+        body: { userId: volunteerToDelete.id }
       });
+      if (error) throw error;
+      toast({ title: 'Success', description: 'Volunteer deleted successfully' });
+      fetchData();
+    } catch (error: any) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    } finally {
       setIsAlertOpen(false);
       setVolunteerToDelete(null);
-    } catch (error) {
-      toast({ 
-        title: "Error", 
-        description: "Failed to delete volunteer", 
-        variant: "destructive" 
-      });
+      setIsDialogOpen(false); // Close the edit dialog as well
     }
   };
 
@@ -244,7 +256,6 @@ export const VolunteerManagement = () => {
               <TabsTrigger value="skills" disabled={!editingVolunteer}>Manage Skills</TabsTrigger>
             </TabsList>
 
-            {/* Profile Tab */}
             <TabsContent value="profile">
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(handleProfileSubmit)} className="space-y-4 pt-4">
@@ -272,7 +283,6 @@ export const VolunteerManagement = () => {
               </Form>
             </TabsContent>
 
-            {/* Skills Tab */}
             <TabsContent value="skills">
               <div className="space-y-4 pt-4">
                 <p className="text-sm text-muted-foreground">Select the skills you have verified for this volunteer.</p>
@@ -318,13 +328,12 @@ export const VolunteerManagement = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Alert Dialog for Delete Confirmation */}
       <AlertDialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the volunteer's account and remove all of their associated data.
+              This action cannot be undone. This will permanently delete the account for {volunteerToDelete?.first_name} {volunteerToDelete?.last_name} and remove all associated data.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
