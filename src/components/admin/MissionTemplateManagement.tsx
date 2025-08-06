@@ -1,10 +1,10 @@
 // src/components/admin/MissionTemplateManagement.tsx
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Textarea } from '@/components/ui/textarea';
@@ -54,9 +54,9 @@ export const MissionTemplateManagement = () => {
   const [allSkills, setAllSkills] = useState<Skill[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<MissionTemplate | null>(null);
   const [templateToDelete, setTemplateToDelete] = useState<MissionTemplate | null>(null);
+  const [skillSearch, setSkillSearch] = useState('');
   const { toast } = useToast();
 
   const form = useForm<TemplateForm>({
@@ -138,7 +138,6 @@ export const MissionTemplateManagement = () => {
     } catch (error: any) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
     } finally {
-      setIsDeleteDialogOpen(false);
       setTemplateToDelete(null);
     }
   };
@@ -185,6 +184,12 @@ export const MissionTemplateManagement = () => {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
     }
   };
+
+  const filteredSkills = useMemo(() => 
+    allSkills.filter(skill => 
+      skill.name.toLowerCase().includes(skillSearch.toLowerCase())
+    ), 
+  [allSkills, skillSearch]);
 
   return (
     <>
@@ -235,14 +240,27 @@ export const MissionTemplateManagement = () => {
                         <Button variant="outline" size="sm" onClick={() => handleOpenDialog(template)}>
                           <Edit className="h-4 w-4" />
                         </Button>
-                        <AlertDialogTrigger asChild>
-                          <Button variant="outline" size="sm" onClick={() => {
-                            setTemplateToDelete(template);
-                            setIsDeleteDialogOpen(true);
-                          }}>
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </AlertDialogTrigger>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="outline" size="sm" onClick={() => setTemplateToDelete(template)}>
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                This action cannot be undone. This will permanently delete the template "{templateToDelete?.title}".
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel onClick={() => setTemplateToDelete(null)}>Cancel</AlertDialogCancel>
+                              <AlertDialogAction onClick={handleDeleteTemplate} className="bg-destructive hover:bg-destructive/90">
+                                Delete
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -298,11 +316,15 @@ export const MissionTemplateManagement = () => {
                     </PopoverTrigger>
                     <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
                       <Command>
-                        <CommandInput placeholder="Search skills..." />
+                        <CommandInput 
+                          placeholder="Search skills..." 
+                          value={skillSearch}
+                          onValueChange={setSkillSearch}
+                        />
                         <CommandList>
                           <CommandEmpty>No skills found.</CommandEmpty>
                           <CommandGroup>
-                            {allSkills.map((skill) => (
+                            {filteredSkills.map((skill) => (
                               <CommandItem
                                 value={skill.name}
                                 key={skill.id}
@@ -312,6 +334,7 @@ export const MissionTemplateManagement = () => {
                                     ? currentSkills.filter((s) => s !== skill.id)
                                     : [...currentSkills, skill.id];
                                   field.onChange(newSkills);
+                                  setSkillSearch('');
                                 }}
                               >
                                 <Check className={cn("mr-2 h-4 w-4", field.value?.includes(skill.id) ? "opacity-100" : "opacity-0")} />
@@ -333,23 +356,6 @@ export const MissionTemplateManagement = () => {
           </Form>
         </DialogContent>
       </Dialog>
-      
-      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the template "{templateToDelete?.title}".
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setTemplateToDelete(null)}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteTemplate} className="bg-destructive hover:bg-destructive/90">
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </>
   );
 };
