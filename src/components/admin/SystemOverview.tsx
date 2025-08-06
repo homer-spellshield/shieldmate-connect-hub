@@ -11,15 +11,10 @@ interface Stats {
   missions: number;
 }
 
-// Dummy data for the new chart
-const missionActivityData = [
-  { month: 'Jan', created: 4 },
-  { month: 'Feb', created: 3 },
-  { month: 'Mar', created: 5 },
-  { month: 'Apr', created: 7 },
-  { month: 'May', created: 6 },
-  { month: 'Jun', created: 10 },
-];
+interface MissionActivityData {
+  month: string;
+  created: number;
+}
 
 export const SystemOverview = () => {
   const [stats, setStats] = useState<Stats>({
@@ -28,6 +23,7 @@ export const SystemOverview = () => {
     skills: 0,
     missions: 0
   });
+  const [missionActivityData, setMissionActivityData] = useState<MissionActivityData[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -53,7 +49,47 @@ export const SystemOverview = () => {
       }
     };
 
+    const fetchMissionActivity = async () => {
+      try {
+        // Get missions created in the last 6 months
+        const sixMonthsAgo = new Date();
+        sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+        
+        const { data: missions } = await supabase
+          .from('missions')
+          .select('created_at')
+          .gte('created_at', sixMonthsAgo.toISOString());
+
+        // Group by month
+        const monthlyData: Record<string, number> = {};
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        
+        missions?.forEach(mission => {
+          const date = new Date(mission.created_at);
+          const monthKey = months[date.getMonth()];
+          monthlyData[monthKey] = (monthlyData[monthKey] || 0) + 1;
+        });
+
+        // Convert to chart format for last 6 months
+        const chartData: MissionActivityData[] = [];
+        const now = new Date();
+        for (let i = 5; i >= 0; i--) {
+          const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+          const monthKey = months[date.getMonth()];
+          chartData.push({
+            month: monthKey,
+            created: monthlyData[monthKey] || 0
+          });
+        }
+
+        setMissionActivityData(chartData);
+      } catch (error) {
+        console.error('Error fetching mission activity:', error);
+      }
+    };
+
     fetchStats();
+    fetchMissionActivity();
   }, []);
 
   const statCards = [

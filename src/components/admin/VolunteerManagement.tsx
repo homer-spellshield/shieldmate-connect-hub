@@ -287,36 +287,99 @@ export const VolunteerManagement = () => {
               <div className="space-y-4 pt-4">
                 <p className="text-sm text-muted-foreground">Select the skills you have verified for this volunteer.</p>
                 <div className="max-h-[400px] overflow-y-auto pr-4">
-                  <Accordion type="multiple" className="w-full">
-                    {Object.entries(groupedSkills).map(([category, domains]) => (
-                      <AccordionItem value={category} key={category}>
-                        <AccordionTrigger className="font-semibold">{category}</AccordionTrigger>
-                        <AccordionContent>
-                          {Object.entries(domains).map(([domain, skillsInDomain]) => (
-                            <div key={domain} className="mb-4">
-                              <h4 className="font-medium text-sm mb-2">{domain}</h4>
-                              <div className="grid grid-cols-2 gap-2">
-                                {skillsInDomain.map(skill => (
-                                  <div key={skill.id} className="flex items-center space-x-2">
+                   <Accordion type="multiple" className="w-full">
+                     {Object.entries(groupedSkills).map(([category, domains]) => {
+                       const categorySkillIds = Object.values(domains).flat().map(s => s.id);
+                       const allCategorySelected = categorySkillIds.every(id => volunteerSkills.includes(id));
+                       const someCategorySelected = categorySkillIds.some(id => volunteerSkills.includes(id));
+                       
+                       return (
+                         <AccordionItem value={category} key={category}>
+                           <AccordionTrigger className="font-semibold">
+                             <div className="flex items-center space-x-2">
+                                <Checkbox
+                                  id={`category-${category}`}
+                                  checked={allCategorySelected}
+                                  ref={(el) => {
+                                    if (el) (el as any).indeterminate = someCategorySelected && !allCategorySelected;
+                                  }}
+                                 onCheckedChange={(checked) => {
+                                   setVolunteerSkills(prev => {
+                                     if (checked) {
+                                       // Add all category skills
+                                       const newSkills = [...prev];
+                                       categorySkillIds.forEach(id => {
+                                         if (!newSkills.includes(id)) newSkills.push(id);
+                                       });
+                                       return newSkills;
+                                     } else {
+                                       // Remove all category skills
+                                       return prev.filter(id => !categorySkillIds.includes(id));
+                                     }
+                                   });
+                                 }}
+                                 onClick={(e) => e.stopPropagation()}
+                               />
+                               <span>{category}</span>
+                             </div>
+                           </AccordionTrigger>
+                         <AccordionContent>
+                           {Object.entries(domains).map(([domain, skillsInDomain]) => {
+                             const domainSkillIds = skillsInDomain.map(s => s.id);
+                             const allDomainSelected = domainSkillIds.every(id => volunteerSkills.includes(id));
+                             const someDomainSelected = domainSkillIds.some(id => volunteerSkills.includes(id));
+                             
+                             return (
+                               <div key={domain} className="mb-4">
+                                 <div className="flex items-center space-x-2 mb-2">
                                     <Checkbox
-                                      id={skill.id}
-                                      checked={volunteerSkills.includes(skill.id)}
-                                      onCheckedChange={(checked) => {
-                                        setVolunteerSkills(prev => 
-                                          checked ? [...prev, skill.id] : prev.filter(id => id !== skill.id)
-                                        );
+                                      id={`domain-${domain}`}
+                                      checked={allDomainSelected}
+                                      ref={(el) => {
+                                        if (el) (el as any).indeterminate = someDomainSelected && !allDomainSelected;
                                       }}
-                                    />
-                                    <label htmlFor={skill.id} className="text-sm font-normal">{skill.name}</label>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          ))}
-                        </AccordionContent>
-                      </AccordionItem>
-                    ))}
-                  </Accordion>
+                                     onCheckedChange={(checked) => {
+                                       setVolunteerSkills(prev => {
+                                         if (checked) {
+                                           // Add all domain skills
+                                           const newSkills = [...prev];
+                                           domainSkillIds.forEach(id => {
+                                             if (!newSkills.includes(id)) newSkills.push(id);
+                                           });
+                                           return newSkills;
+                                         } else {
+                                           // Remove all domain skills
+                                           return prev.filter(id => !domainSkillIds.includes(id));
+                                         }
+                                       });
+                                     }}
+                                   />
+                                   <label htmlFor={`domain-${domain}`} className="font-medium text-sm">{domain}</label>
+                                 </div>
+                                 <div className="grid grid-cols-2 gap-2 ml-6">
+                                   {skillsInDomain.map(skill => (
+                                     <div key={skill.id} className="flex items-center space-x-2">
+                                       <Checkbox
+                                         id={skill.id}
+                                         checked={volunteerSkills.includes(skill.id)}
+                                         onCheckedChange={(checked) => {
+                                           setVolunteerSkills(prev => 
+                                             checked ? [...prev, skill.id] : prev.filter(id => id !== skill.id)
+                                           );
+                                         }}
+                                       />
+                                       <label htmlFor={skill.id} className="text-sm font-normal">{skill.name}</label>
+                                     </div>
+                                   ))}
+                                 </div>
+                               </div>
+                             );
+                           })}
+                          </AccordionContent>
+                          </AccordionItem>
+                        );
+                      })}
+                    </Accordion>
                 </div>
                 <Separator />
                 <div className="flex justify-end pt-2">

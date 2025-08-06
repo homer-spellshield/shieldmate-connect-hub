@@ -92,7 +92,7 @@ const Auth = () => {
           </div>
           <h1 className="text-3xl font-bold tracking-tight">ShieldMate</h1>
           <p className="text-muted-foreground">
-            Connecting organisations with tech volunteers
+            Tech Skills for Good
           </p>
         </div>
 
