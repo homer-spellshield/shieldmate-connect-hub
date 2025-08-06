@@ -88,7 +88,7 @@ const Auth = () => {
       <div className="w-full max-w-md space-y-6">
         <div className="text-center space-y-2">
           <div className="flex items-center justify-center">
-            <img src="/lovable-uploads/fd6ff653-a423-4eef-991c-2d17fe01c584.png" alt="ShieldMate Logo" className="h-12 w-12" />
+            <img src="/lovable-uploads/81f144cd-d6f0-4aeb-ac8e-b0e36082a9b9.png" alt="ShieldMate Logo" className="h-12 w-12" />
           </div>
           <h1 className="text-3xl font-bold tracking-tight">ShieldMate</h1>
           <p className="text-muted-foreground">
