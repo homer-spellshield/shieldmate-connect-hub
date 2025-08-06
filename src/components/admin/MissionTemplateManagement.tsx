@@ -4,7 +4,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -14,7 +15,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Edit, Trash2, Search, Briefcase } from 'lucide-react';
+import { Plus, Edit, Trash2 } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Check, ChevronsUpDown } from 'lucide-react';
@@ -53,7 +54,9 @@ export const MissionTemplateManagement = () => {
   const [allSkills, setAllSkills] = useState<Skill[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<MissionTemplate | null>(null);
+  const [templateToDelete, setTemplateToDelete] = useState<MissionTemplate | null>(null);
   const { toast } = useToast();
 
   const form = useForm<TemplateForm>({
@@ -88,9 +91,9 @@ export const MissionTemplateManagement = () => {
       if (templatesRes.error) throw templatesRes.error;
       if (skillsRes.error) throw skillsRes.error;
 
-      setTemplates(templatesRes.data as any || []);
+      setTemplates((templatesRes.data as any) || []);
       setAllSkills(skillsRes.data || []);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching data:', error);
       toast({ title: 'Error', description: 'Failed to fetch data', variant: 'destructive' });
     } finally {
@@ -125,15 +128,18 @@ export const MissionTemplateManagement = () => {
     setIsDialogOpen(true);
   };
 
-  const handleDeleteTemplate = async (templateId: string) => {
-    if (!window.confirm('Are you sure you want to delete this template? This cannot be undone.')) return;
+  const handleDeleteTemplate = async () => {
+    if (!templateToDelete) return;
     try {
-      const { error } = await supabase.from('mission_templates').delete().eq('id', templateId);
+      const { error } = await supabase.from('mission_templates').delete().eq('id', templateToDelete.id);
       if (error) throw error;
       toast({ title: 'Success', description: 'Mission template deleted.' });
       fetchTemplatesAndSkills();
     } catch (error: any) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    } finally {
+      setIsDeleteDialogOpen(false);
+      setTemplateToDelete(null);
     }
   };
 
@@ -181,64 +187,71 @@ export const MissionTemplateManagement = () => {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle>Mission Template Management</CardTitle>
-            <CardDescription>Create and manage reusable mission templates.</CardDescription>
+    <>
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Mission Template Management</CardTitle>
+              <CardDescription>Create and manage reusable mission templates.</CardDescription>
+            </div>
+            <Button onClick={() => handleOpenDialog()}>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Template
+            </Button>
           </div>
-          <Button onClick={() => handleOpenDialog()}>
-            <Plus className="h-4 w-4 mr-2" />
-            Add Template
-          </Button>
-        </div>
-      </CardHeader>
-      <CardContent>
-        {loading ? <p>Loading...</p> : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Title</TableHead>
-                <TableHead>Required Skills</TableHead>
-                <TableHead>Est. Hours</TableHead>
-                <TableHead>Difficulty</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {templates.map(template => (
-                <TableRow key={template.id}>
-                  <TableCell className="font-medium">{template.title}</TableCell>
-                  <TableCell>
-                    <div className="flex flex-wrap gap-1">
-                      {template.mission_template_skills.map(s => (
-                        <Badge key={s.skills.id} variant="secondary">{s.skills.name}</Badge>
-                      ))}
-                    </div>
-                  </TableCell>
-                  <TableCell>{template.estimated_hours || 'N/A'}</TableCell>
-                  <TableCell>
-                    {template.difficulty_level ? (
-                      <Badge variant="outline" className="capitalize">{template.difficulty_level}</Badge>
-                    ) : 'N/A'}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex gap-2">
-                      <Button variant="outline" size="sm" onClick={() => handleOpenDialog(template)}>
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button variant="outline" size="sm" onClick={() => handleDeleteTemplate(template.id)}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
+        </CardHeader>
+        <CardContent>
+          {loading ? <p>Loading...</p> : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Title</TableHead>
+                  <TableHead>Required Skills</TableHead>
+                  <TableHead>Est. Hours</TableHead>
+                  <TableHead>Difficulty</TableHead>
+                  <TableHead>Actions</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        )}
-      </CardContent>
+              </TableHeader>
+              <TableBody>
+                {templates.map(template => (
+                  <TableRow key={template.id}>
+                    <TableCell className="font-medium">{template.title}</TableCell>
+                    <TableCell>
+                      <div className="flex flex-wrap gap-1">
+                        {template.mission_template_skills.map(s => (
+                          <Badge key={s.skills.id} variant="secondary">{s.skills.name}</Badge>
+                        ))}
+                      </div>
+                    </TableCell>
+                    <TableCell>{template.estimated_hours || 'N/A'}</TableCell>
+                    <TableCell>
+                      {template.difficulty_level ? (
+                        <Badge variant="outline" className="capitalize">{template.difficulty_level}</Badge>
+                      ) : 'N/A'}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-2">
+                        <Button variant="outline" size="sm" onClick={() => handleOpenDialog(template)}>
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="outline" size="sm" onClick={() => {
+                            setTemplateToDelete(template);
+                            setIsDeleteDialogOpen(true);
+                          }}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="sm:max-w-[625px]">
@@ -260,7 +273,7 @@ export const MissionTemplateManagement = () => {
                 )} />
                 <FormField control={form.control} name="difficulty_level" render={({ field }) => (
                   <FormItem><FormLabel>Difficulty Level</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value ?? ''}>
+                    <Select onValueChange={field.onChange} value={field.value ?? ''}>
                       <FormControl><SelectTrigger><SelectValue placeholder="Select difficulty" /></SelectTrigger></FormControl>
                       <SelectContent>
                         <SelectItem value="beginner">Beginner</SelectItem>
@@ -291,7 +304,7 @@ export const MissionTemplateManagement = () => {
                           <CommandGroup>
                             {allSkills.map((skill) => (
                               <CommandItem
-                                value={skill.id}
+                                value={skill.name}
                                 key={skill.id}
                                 onSelect={() => {
                                   const currentSkills = field.value || [];
@@ -320,6 +333,23 @@ export const MissionTemplateManagement = () => {
           </Form>
         </DialogContent>
       </Dialog>
-    </Card>
+      
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the template "{templateToDelete?.title}".
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setTemplateToDelete(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteTemplate} className="bg-destructive hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 };
