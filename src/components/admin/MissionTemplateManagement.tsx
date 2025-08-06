@@ -334,7 +334,6 @@ export const MissionTemplateManagement = () => {
                                     ? currentSkills.filter((s) => s !== skill.id)
                                     : [...currentSkills, skill.id];
                                   field.onChange(newSkills);
-                                  setSkillSearch('');
                                 }}
                               >
                                 <Check className={cn("mr-2 h-4 w-4", field.value?.includes(skill.id) ? "opacity-100" : "opacity-0")} />
