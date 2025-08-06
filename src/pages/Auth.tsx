@@ -10,7 +10,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Shield, ExternalLink } from 'lucide-react';
+import { ExternalLink } from 'lucide-react';
 
 const signInSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
@@ -88,7 +88,7 @@ const Auth = () => {
       <div className="w-full max-w-md space-y-6">
         <div className="text-center space-y-2">
           <div className="flex items-center justify-center">
-            <Shield className="h-12 w-12 text-primary" />
+            <img src="/lovable-uploads/fd6ff653-a423-4eef-991c-2d17fe01c584.png" alt="ShieldMate Logo" className="h-12 w-12" />
           </div>
           <h1 className="text-3xl font-bold tracking-tight">ShieldMate</h1>
           <p className="text-muted-foreground">
