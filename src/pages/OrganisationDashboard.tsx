@@ -158,7 +158,7 @@ const OrganisationDashboard = () => {
               <Card>
                 <CardContent className="pt-6 text-center">
                   <p className="text-muted-foreground mb-4">No active missions yet.</p>
-                  <Button onClick={handlePostNewMission}>Create your first mission</Button>
+                  <Button onClick={handlePostNewMission}>Create a mission</Button>
                 </CardContent>
               </Card>
             ) : (

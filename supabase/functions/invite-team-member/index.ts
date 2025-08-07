@@ -54,13 +54,14 @@ serve(async (req: Request) => {
 
     // 2. --- CHECK IF INVITEE IS ALREADY A MEMBER ---
     // Check if a user with this email already exists
-    const { data: existingUser, error: existingUserError } = await supabaseAdmin.auth.admin.getUserByEmail(inviteeEmail);
-    if (existingUser && existingUser.user) {
+    const { data: existingUser, error: existingUserError } = await supabaseAdmin.auth.admin.listUsers();
+    const userWithEmail = existingUser.users?.find(u => u.email === inviteeEmail);
+    if (userWithEmail) {
         // User exists, check if they are already in the organization
         const { data: existingMember, error: existingMemberError } = await supabaseAdmin
             .from('organization_members')
             .select('id')
-            .eq('user_id', existingUser.user.id)
+            .eq('user_id', userWithEmail.id)
             .eq('organization_id', orgId)
             .single();
 

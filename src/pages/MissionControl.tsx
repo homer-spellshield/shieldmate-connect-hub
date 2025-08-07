@@ -245,7 +245,26 @@ const MissionControl = () => {
         if (!volunteerProfile) return;
     
         const raterIsVolunteer = user.id === volunteerProfile.user_id;
-        const ratedUserId = raterIsVolunteer ? (mission.organizations as any)?.id : volunteerProfile.user_id;
+        let ratedUserId: string;
+        
+        if (raterIsVolunteer) {
+            // Volunteer is rating the organization - need to find the organization owner
+            const { data: orgOwner, error } = await supabase
+                .from('organization_members')
+                .select('user_id')
+                .eq('organization_id', mission.organization_id)
+                .eq('role', 'owner')
+                .single();
+            
+            if (error || !orgOwner) {
+                toast({ title: "Error", description: "Could not find organization contact to rate.", variant: "destructive" });
+                return;
+            }
+            ratedUserId = orgOwner.user_id;
+        } else {
+            // Organization member is rating the volunteer
+            ratedUserId = volunteerProfile.user_id;
+        }
     
         if (!ratedUserId) {
             toast({ title: "Error", description: "Could not identify the user to rate.", variant: "destructive" });

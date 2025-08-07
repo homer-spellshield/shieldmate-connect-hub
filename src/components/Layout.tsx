@@ -2,7 +2,7 @@ import { ReactNode, useEffect, useState, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
-import { FloatingChatLauncher } from "@/components/FloatingChatLauncher";
+
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -191,7 +191,7 @@ export const Layout = ({ children }: { children: ReactNode }) => {
           </div>
         </div>
         
-        <FloatingChatLauncher />
+        
       </SidebarProvider>
     </div>
   );

@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { MissionTemplateSelector } from '@/components/MissionTemplateSelector';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
@@ -205,24 +205,17 @@ const CreateMission = () => {
                     name="template_id"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Mission Template</FormLabel>
-                        <Select onValueChange={(value) => {
-                          field.onChange(value);
-                          handleTemplateSelect(value);
-                        }}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select a mission template" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {templates.map((template) => (
-                              <SelectItem key={template.id} value={template.id}>
-                                {template.title}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <FormLabel>Choose Mission Template</FormLabel>
+                        <FormControl>
+                          <MissionTemplateSelector 
+                            templates={templates}
+                            selectedTemplate={selectedTemplate}
+                            onTemplateSelect={(templateId) => {
+                              field.onChange(templateId);
+                              handleTemplateSelect(templateId);
+                            }}
+                          />
+                        </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
