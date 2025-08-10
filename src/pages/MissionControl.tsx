@@ -180,6 +180,19 @@ const MissionControl = () => {
             toast({ title: "File too large", description: "Please select a file smaller than 20MB.", variant: "destructive" });
             return;
         }
+        const allowedTypes = [
+            'application/pdf',
+            'application/msword',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'image/png',
+            'image/jpeg',
+            'text/plain'
+        ];
+        if (!allowedTypes.includes(file.type)) {
+            toast({ title: "Unsupported file type", description: "Allowed: PDF, DOC, DOCX, XLSX, PNG, JPG, TXT.", variant: "destructive" });
+            return;
+        }
         setUploading(true);
         try {
             const filePath = `${missionId}/${user.id}/${Date.now()}_${file.name}`;

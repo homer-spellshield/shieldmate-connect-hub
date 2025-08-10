@@ -102,7 +102,7 @@ const MyMissions = () => {
             <p className="text-muted-foreground mb-4">Click "Create Mission" to get started.</p>
             <Button onClick={() => navigate('/org-dashboard/missions/new')}>
               <Plus className="h-4 w-4 mr-2" />
-              Create Your First Mission
+              Create a Mission
             </Button>
           </CardContent>
         </Card>

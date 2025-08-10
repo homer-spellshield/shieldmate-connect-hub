@@ -153,12 +153,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       email,
       password,
       options: {
+        emailRedirectTo: `${window.location.origin}/`,
         data: {
           first_name: firstName,
           last_name: lastName,
           org_name: orgName,
           domain: emailDomain,
-          abn: abn // Pass the ABN to the Supabase function
+          abn: abn
         },
       },
     });
