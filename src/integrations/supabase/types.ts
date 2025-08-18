@@ -600,6 +600,21 @@ export type Database = {
           last_name: string
         }[]
       }
+      get_open_missions_public: {
+        Args: { p_limit?: number }
+        Returns: {
+          description: string
+          difficulty_level: string
+          estimated_hours: number
+          id: string
+          organization_id: string
+          organization_name: string
+          status: string
+          template_id: string
+          template_title: string
+          title: string
+        }[]
+      }
       get_profile_for_mission: {
         Args: { p_mission_id: string; p_user_id: string }
         Returns: {
@@ -640,6 +655,10 @@ export type Database = {
       }
       is_organization_owner: {
         Args: { org_id: string }
+        Returns: boolean
+      }
+      organization_domain_exists: {
+        Args: { p_domain: string }
         Returns: boolean
       }
       set_volunteer_skills_atomic: {

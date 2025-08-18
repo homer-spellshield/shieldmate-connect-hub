@@ -138,15 +138,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       toast({ title: "Registration Failed", description: error.message, variant: "destructive" });
       return { error };
     }
-    const { data: existingOrgs, error: domainCheckError } = await supabase
-      .from('organizations')
-      .select('id')
-      .eq('domain', emailDomain);
+    const { data: domainExists, error: domainCheckError } = await supabase
+      .rpc('organization_domain_exists', { p_domain: emailDomain });
     if (domainCheckError) {
       toast({ title: "Registration Check Failed", description: "An error occurred while verifying your domain. Please try again.", variant: "destructive" });
       return { error: domainCheckError };
     }
-    if (existingOrgs && existingOrgs.length > 0) {
+    if (domainExists) {
       const error = new Error('An organisation with this email domain already exists. Please contact an admin in your organisation to be added.');
       toast({ title: "Registration Failed", description: error.message, variant: "destructive" });
       return { error };

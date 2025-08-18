@@ -76,15 +76,9 @@ const MissionDiscovery = () => {
       try {
         setLoading(true);
         
-        // Fetch missions with related data
+        // Use safe RPC to fetch missions with organizations (only exposes public fields)
         const { data: missionsData, error: missionsError } = await supabase
-          .from('missions')
-          .select(`
-            *,
-            organizations!inner(name),
-            mission_templates!inner(title)
-          `)
-          .eq('status', 'open');
+          .rpc('get_open_missions_public');
 
         if (missionsError) throw missionsError;
 
@@ -137,6 +131,8 @@ const MissionDiscovery = () => {
 
           processedMissions.push({
             ...mission,
+            organizations: { name: mission.organization_name },
+            mission_templates: { title: mission.template_title },
             skills: missionSkills,
             applicantCount: applicantCount || 0
           });
