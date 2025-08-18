@@ -135,7 +135,9 @@ const MissionControl = () => {
         const channel = supabase.channel(`mission-control:${missionId}`)
             .on<ChatMessage>('postgres_changes', { event: 'INSERT', schema: 'public', table: 'mission_messages', filter: `mission_id=eq.${missionId}` }, async payload => {
                 if (payload.new.user_id === user?.id) return;
-                const { data } = await supabase.from('profiles').select('user_id, first_name, last_name, email').eq('user_id', payload.new.user_id).single();
+                const { data } = await supabase
+                  .rpc('get_profile_for_mission', { p_mission_id: missionId, p_user_id: payload.new.user_id })
+                  .single();
                 setMessages(currentMessages => [...currentMessages, { ...payload.new, profiles: data } as ChatMessage]);
             })
             .on('postgres_changes', { event: '*', schema: 'public', table: 'mission_files', filter: `mission_id=eq.${missionId}`}, () => fetchAllData())

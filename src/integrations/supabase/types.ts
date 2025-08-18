@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12.2.3 (519615d)"
@@ -592,24 +592,33 @@ export type Database = {
       get_all_volunteers_with_details: {
         Args: Record<PropertyKey, never>
         Returns: {
+          bio: string
+          created_at: string
+          email: string
+          first_name: string
           id: string
+          last_name: string
+        }[]
+      }
+      get_profile_for_mission: {
+        Args: { p_mission_id: string; p_user_id: string }
+        Returns: {
           email: string
           first_name: string
           last_name: string
-          bio: string
-          created_at: string
+          user_id: string
         }[]
       }
       get_team_members: {
         Args: { org_id: string }
         Returns: {
+          avatar_url: string
+          email: string
+          first_name: string
           id: string
+          last_name: string
           role: string
           user_id: string
-          first_name: string
-          last_name: string
-          email: string
-          avatar_url: string
         }[]
       }
       get_user_organizations: {
@@ -620,8 +629,8 @@ export type Database = {
       }
       has_role: {
         Args: {
-          _user_id: string
           _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
         }
         Returns: boolean
       }
@@ -632,6 +641,14 @@ export type Database = {
       is_organization_owner: {
         Args: { org_id: string }
         Returns: boolean
+      }
+      set_volunteer_skills_atomic: {
+        Args: {
+          p_admin_id: string
+          p_skill_ids: string[]
+          p_volunteer_id: string
+        }
+        Returns: undefined
       }
     }
     Enums: {
