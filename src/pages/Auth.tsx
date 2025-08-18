@@ -39,9 +39,11 @@ type SignUpForm = z.infer<typeof signUpSchema>;
 const VOLUNTEER_SIGNUP_URL = "https://docs.google.com/forms/d/e/1FAIpQLScE-gGwsYUR7qvwQZvi8ER4UVomquwVyFnha4s8d05m5_mErw/viewform?usp=sharing&ouid=103728325953907502630";
 
 const Auth = () => {
-  const { signIn, signUp, user } = useAuth();
+  const { signIn, signUp, resetPassword, resendConfirmation, user } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('signin');
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
 
   useEffect(() => {
     if (user) {
@@ -80,6 +82,20 @@ const Auth = () => {
     if (!error) {
       signUpForm.reset();
       setActiveTab('signin');
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    if (!resetEmail) return;
+    await resetPassword(resetEmail);
+    setShowForgotPassword(false);
+    setResetEmail('');
+  };
+
+  const handleResendConfirmation = async () => {
+    const email = signUpForm.getValues('email') || signInForm.getValues('email');
+    if (email) {
+      await resendConfirmation(email);
     }
   };
 
@@ -131,6 +147,23 @@ const Auth = () => {
                     <Button type="submit" className="w-full" disabled={signInForm.formState.isSubmitting}>
                       {signInForm.formState.isSubmitting ? 'Signing in...' : 'Sign In'}
                     </Button>
+                    
+                    <div className="flex justify-between text-sm">
+                      <button
+                        type="button"
+                        onClick={() => setShowForgotPassword(true)}
+                        className="text-primary hover:underline"
+                      >
+                        Forgot password?
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleResendConfirmation}
+                        className="text-primary hover:underline"
+                      >
+                        Resend verification
+                      </button>
+                    </div>
                   </form>
                 </Form>
               </TabsContent>
@@ -206,6 +239,16 @@ const Auth = () => {
                     <Button type="submit" className="w-full" disabled={signUpForm.formState.isSubmitting}>
                       {signUpForm.formState.isSubmitting ? 'Creating Account...' : 'Create Account'}
                     </Button>
+                    
+                    <div className="text-center">
+                      <button
+                        type="button"
+                        onClick={handleResendConfirmation}
+                        className="text-sm text-primary hover:underline"
+                      >
+                        Resend confirmation email
+                      </button>
+                    </div>
                   </form>
                 </Form>
               </TabsContent>
@@ -230,6 +273,37 @@ const Auth = () => {
             </Tabs>
           </CardContent>
         </Card>
+
+        {showForgotPassword && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Reset Password</CardTitle>
+              <CardDescription>
+                Enter your email address and we'll send you a password reset link.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Input
+                type="email"
+                placeholder="Enter your email"
+                value={resetEmail}
+                onChange={(e) => setResetEmail(e.target.value)}
+              />
+              <div className="flex space-x-2">
+                <Button onClick={handleForgotPassword} className="flex-1">
+                  Send Reset Link
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowForgotPassword(false)}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );

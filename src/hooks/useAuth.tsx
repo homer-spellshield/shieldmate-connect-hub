@@ -24,6 +24,8 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUp: (email: string, password: string, firstName: string, lastName: string, orgName: string, isAuthorized: boolean, abn: string) => Promise<{ error: PostgrestError | Error | null }>;
+  resetPassword: (email: string) => Promise<{ error: Error | null }>;
+  resendConfirmation: (email: string) => Promise<{ error: Error | null }>;
   refetchProfile: () => Promise<void>;
 }
 
@@ -176,6 +178,40 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return { error: null };
   };
 
+  const resetPassword = async (email: string) => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    if (error) {
+      toast({ title: "Reset failed", description: error.message, variant: "destructive" });
+    } else {
+      toast({
+        title: "Check your email",
+        description: "We've sent a password reset link to your email address.",
+      });
+    }
+    return { error };
+  };
+
+  const resendConfirmation = async (email: string) => {
+    const { error } = await supabase.auth.resend({
+      type: 'signup',
+      email,
+      options: {
+        emailRedirectTo: `${window.location.origin}/`,
+      }
+    });
+    if (error) {
+      toast({ title: "Resend failed", description: error.message, variant: "destructive" });
+    } else {
+      toast({
+        title: "Email sent",
+        description: "We've resent the confirmation email to your address.",
+      });
+    }
+    return { error };
+  };
+
   const value = {
     user,
     session,
@@ -185,6 +221,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     signOut,
     signIn,
     signUp,
+    resetPassword,
+    resendConfirmation,
     refetchProfile: useCallback(async () => {
         if (user) await fetchProfileAndRoles(user);
     }, [user, fetchProfileAndRoles]),
