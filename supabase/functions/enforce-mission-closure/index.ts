@@ -111,6 +111,66 @@ serve(async (_req: Request) => {
           await supabaseAdmin.from('notifications').insert(notifications);
         }
 
+        // Send email notifications for auto-closure
+        try {
+          // Email volunteer
+          if (volunteer_id) {
+            const { data: volunteerProfile } = await supabaseAdmin
+              .from('profiles')
+              .select('first_name, last_name, email')
+              .eq('user_id', volunteer_id)
+              .single();
+
+            if (volunteerProfile?.email) {
+              const volunteerName = volunteerProfile.first_name && volunteerProfile.last_name 
+                ? `${volunteerProfile.first_name} ${volunteerProfile.last_name}` 
+                : volunteerProfile.email;
+
+              await supabaseAdmin.functions.invoke('send-mission-email', {
+                body: {
+                  to: volunteerProfile.email,
+                  name: volunteerName,
+                  subject: `Mission Automatically Completed - ${mission.title}`,
+                  missionTitle: mission.title,
+                  missionId: mission.id,
+                  emailType: 'auto_closed'
+                }
+              });
+            }
+          }
+
+          // Email organization members
+          if (orgMembers && orgMembers.length > 0) {
+            for (const member of orgMembers) {
+              const { data: memberProfile } = await supabaseAdmin
+                .from('profiles')
+                .select('first_name, last_name, email')
+                .eq('user_id', member.user_id)
+                .single();
+
+              if (memberProfile?.email) {
+                const memberName = memberProfile.first_name && memberProfile.last_name 
+                  ? `${memberProfile.first_name} ${memberProfile.last_name}` 
+                  : memberProfile.email;
+
+                await supabaseAdmin.functions.invoke('send-mission-email', {
+                  body: {
+                    to: memberProfile.email,
+                    name: memberName,
+                    subject: `Mission Automatically Completed - ${mission.title}`,
+                    missionTitle: mission.title,
+                    missionId: mission.id,
+                    emailType: 'auto_closed'
+                  }
+                });
+              }
+            }
+          }
+        } catch (emailError) {
+          console.error('Error sending auto-closure emails:', emailError);
+          // Don't fail the main operation if email fails
+        }
+
         results.push({ id: mission.id, title: mission.title, status: 'completed' });
         console.log(`Successfully auto-closed mission: ${mission.title}`);
 

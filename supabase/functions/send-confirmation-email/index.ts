@@ -1,7 +1,10 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { Resend } from "npm:resend@2.0.0";
 
-const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
+// Brevo email service configuration
+const BREVO_API_URL = "https://api.brevo.com/v3/smtp/email";
+const BREVO_API_KEY = Deno.env.get("BREVO_API_KEY");
+const BREVO_SENDER_EMAIL = Deno.env.get("BREVO_SENDER_EMAIL") || "noreply@shieldmate.app";
+const BREVO_SENDER_NAME = Deno.env.get("BREVO_SENDER_NAME") || "ShieldMate";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -29,11 +32,14 @@ const handler = async (req: Request): Promise<Response> => {
     const name = firstName && lastName ? `${firstName} ${lastName}` : email;
     const userTypeText = userType === 'organization' ? 'Organization' : 'Volunteer';
 
-    const emailResponse = await resend.emails.send({
-      from: "ShieldMate <onboarding@resend.dev>",
-      to: [email],
+    const emailPayload = {
+      sender: {
+        email: BREVO_SENDER_EMAIL,
+        name: BREVO_SENDER_NAME
+      },
+      to: [{ email, name }],
       subject: `Confirm your ${userTypeText} account`,
-      html: `
+      htmlContent: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
           <div style="text-align: center; margin-bottom: 30px;">
             <h1 style="color: #2563eb; margin: 0;">🛡️ ShieldMate</h1>
@@ -66,12 +72,29 @@ const handler = async (req: Request): Promise<Response> => {
             If you didn't create an account with ShieldMate, you can safely ignore this email.
           </p>
         </div>
-      `,
+      `
+    };
+
+    const emailResponse = await fetch(BREVO_API_URL, {
+      method: "POST",
+      headers: {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+        "api-key": BREVO_API_KEY!
+      },
+      body: JSON.stringify(emailPayload)
     });
 
-    console.log("Confirmation email sent successfully:", emailResponse);
+    if (!emailResponse.ok) {
+      const errorData = await emailResponse.text();
+      throw new Error(`Brevo API error: ${emailResponse.status} ${errorData}`);
+    }
 
-    return new Response(JSON.stringify({ success: true, data: emailResponse }), {
+    const responseData = await emailResponse.json();
+
+    console.log("Confirmation email sent successfully:", responseData);
+
+    return new Response(JSON.stringify({ success: true, data: responseData }), {
       status: 200,
       headers: {
         "Content-Type": "application/json",

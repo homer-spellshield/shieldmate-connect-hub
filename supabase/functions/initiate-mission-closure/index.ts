@@ -110,6 +110,39 @@ serve(async (req: Request) => {
         message: notificationMessage,
         link_url: `/mission/${mission_id}`
       });
+
+      // Send email notification for closure initiation
+      try {
+        // Get user details for email
+        const { data: userProfile } = await supabaseAdmin
+          .from('profiles')
+          .select('first_name, last_name, email')
+          .eq('user_id', notificationUserId)
+          .single();
+
+        if (userProfile?.email) {
+          const emailName = userProfile.first_name && userProfile.last_name 
+            ? `${userProfile.first_name} ${userProfile.last_name}` 
+            : userProfile.email;
+
+          await supabaseAdmin.functions.invoke('send-mission-email', {
+            body: {
+              to: userProfile.email,
+              name: emailName,
+              subject: `Mission Completion Review Required - ${mission.title}`,
+              missionTitle: mission.title,
+              missionId: mission_id,
+              emailType: 'closure_initiated',
+              additionalData: {
+                initiatorType: isVolunteer ? 'volunteer' : 'organization'
+              }
+            }
+          });
+        }
+      } catch (emailError) {
+        console.error('Error sending closure email:', emailError);
+        // Don't fail the main operation if email fails
+      }
     }
 
     return new Response(JSON.stringify({ success: true, data: updatedMission }), {

@@ -3,5 +3,8 @@ project_id = "zxmxfyzwqyawebnrmnku"
 [functions.send-confirmation-email]
 verify_jwt = false
 
+[functions.send-mission-email]
+verify_jwt = false
+
 [functions.admin-create-user]
 verify_jwt = true
