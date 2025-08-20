@@ -54,8 +54,28 @@ export const MissionApplicationsList = ({ organizationId }: MissionApplicationsL
         return;
       }
 
-      // Mock data for now - will be replaced with real data once foreign keys are properly set up
-      setApplications([]);
+      // Fetch real applications data
+      const { data: applicationsData, error: applicationsError } = await supabase
+        .from('mission_applications')
+        .select(`
+          id,
+          application_message,
+          applied_at,
+          status,
+          profiles!mission_applications_volunteer_id_fkey (
+            first_name,
+            last_name
+          ),
+          missions!mission_applications_mission_id_fkey (
+            title
+          )
+        `)
+        .in('mission_id', missionIds)
+        .order('applied_at', { ascending: false });
+
+      if (applicationsError) throw applicationsError;
+      
+      setApplications(applicationsData || []);
     } catch (error) {
       console.error('Error fetching applications:', error);
       toast({

@@ -1,10 +1,13 @@
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { supabase } from '@/integrations/supabase/client';
+import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { Check, X, Building, Loader2 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { Building2, Mail, Globe, FileText, Check, X, Loader2 } from 'lucide-react';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
+import { AppErrorHandler } from '@/lib/errorHandler';
 
 // Explicitly define the Organisation type to match our database
 interface Organisation {
@@ -16,10 +19,19 @@ interface Organisation {
   status: string;
 }
 
+interface ConfirmDialogState {
+  isOpen: boolean;
+  orgId: string;
+  action: 'reject';
+  title: string;
+  description: string;
+}
+
 export const OrganisationVerification = () => {
   const [organisations, setOrganisations] = useState<Organisation[]>([]);
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState<string | null>(null);
+  const [confirmDialog, setConfirmDialog] = useState<ConfirmDialogState | null>(null);
   const { toast } = useToast();
 
   const fetchPendingOrganisations = async () => {
@@ -75,32 +87,40 @@ export const OrganisationVerification = () => {
   };
 
   const handleReject = async (orgId: string) => {
-    if (!window.confirm('Are you sure you want to reject this organisation? This action cannot be undone.')) {
-        return;
-    }
+    setConfirmDialog({
+      isOpen: true,
+      orgId,
+      action: 'reject',
+      title: 'Reject Organisation',
+      description: 'Are you sure you want to reject this organisation? This action cannot be undone.',
+    });
+  };
+
+  const executeAction = async () => {
+    if (!confirmDialog?.orgId) return;
+    
+    const { orgId } = confirmDialog;
     setProcessingId(orgId);
     try {
-      const { error } = await (supabase as any)
-        .from('organizations')
-        .update({ status: 'rejected' })
-        .eq('id', orgId);
+      const { error } = await AppErrorHandler.handleAsync(async () => {
+        return await supabase
+          .from('organizations')
+          .update({ status: 'rejected' })
+          .eq('id', orgId);
+      }, 'rejecting organisation');
 
       if (error) throw error;
 
       toast({
         title: 'Organisation Rejected',
         description: 'The organisation has been marked as rejected.',
-        variant: 'destructive',
       });
       setOrganisations(prev => prev.filter(org => org.id !== orgId));
     } catch (error: any) {
-      toast({
-        title: 'Error',
-        description: 'Failed to reject organisation: ' + error.message,
-        variant: 'destructive',
-      });
+      AppErrorHandler.showToast(error, 'rejecting organisation');
     } finally {
       setProcessingId(null);
+      setConfirmDialog(null);
     }
   };
 
@@ -119,7 +139,7 @@ export const OrganisationVerification = () => {
           </div>
         ) : organisations.length === 0 ? (
           <div className="text-center py-10">
-            <Building className="mx-auto h-12 w-12 text-muted-foreground" />
+            <Building2 className="mx-auto h-12 w-12 text-muted-foreground" />
             <h3 className="mt-4 text-lg font-medium">All Clear!</h3>
             <p className="mt-1 text-sm text-muted-foreground">
               There are no new organisations awaiting verification.
@@ -176,6 +196,17 @@ export const OrganisationVerification = () => {
           </Table>
         )}
       </CardContent>
+      
+      <ConfirmationDialog
+        open={confirmDialog?.isOpen ?? false}
+        onOpenChange={(open) => !open && setConfirmDialog(null)}
+        title={confirmDialog?.title ?? ''}
+        description={confirmDialog?.description ?? ''}
+        confirmText="Reject"
+        variant="destructive"
+        onConfirm={executeAction}
+        loading={processingId !== null}
+      />
     </Card>
   );
 };

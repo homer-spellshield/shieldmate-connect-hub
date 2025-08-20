@@ -30,6 +30,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
+import { AppErrorHandler } from '@/lib/errorHandler';
 
 
 // Schema for the invitation form
@@ -39,7 +41,6 @@ const inviteSchema = z.object({
 });
 type InviteForm = z.infer<typeof inviteSchema>;
 
-// **MODIFICATION 1: Updated TeamMember type to match the RPC function's return value**
 type TeamMember = {
   id: string;
   role: string;
@@ -50,6 +51,13 @@ type TeamMember = {
   email: string | null;
 };
 
+interface ConfirmDialogState {
+  isOpen: boolean;
+  memberId: string;
+  title: string;
+  description: string;
+}
+
 const TeamManagement = () => {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -57,6 +65,7 @@ const TeamManagement = () => {
   const [loading, setLoading] = useState(true);
   const [organization, setOrganization] = useState<{ id: string, name: string } | null>(null);
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
+  const [confirmDialog, setConfirmDialog] = useState<ConfirmDialogState | null>(null);
 
   const form = useForm<InviteForm>({
     resolver: zodResolver(inviteSchema),
@@ -172,14 +181,21 @@ const TeamManagement = () => {
   const handleRemoveMember = async (memberId: string) => {
     if (!organization) return;
     
-    if (!confirm('Are you sure you want to remove this team member? This action cannot be undone.')) {
-      return;
-    }
+    setConfirmDialog({
+      isOpen: true,
+      memberId,
+      title: 'Remove Team Member',
+      description: 'Are you sure you want to remove this team member? This action cannot be undone.',
+    });
+  };
+
+  const executeRemoveMember = async () => {
+    if (!organization || !confirmDialog?.memberId) return;
     
     try {
       const { error } = await supabase.rpc('remove_team_member', {
         p_org_id: organization.id,
-        p_member_id: memberId
+        p_member_id: confirmDialog.memberId
       });
 
       if (error) throw error;
@@ -192,11 +208,9 @@ const TeamManagement = () => {
       // Refresh the team members list
       fetchTeamMembers();
     } catch (error: any) {
-      toast({
-        title: "Failed to remove member",
-        description: error.message,
-        variant: "destructive",
-      });
+      AppErrorHandler.showToast(error, 'removing team member');
+    } finally {
+      setConfirmDialog(null);
     }
   };
 
@@ -364,6 +378,17 @@ const TeamManagement = () => {
           )}
         </CardContent>
       </Card>
+      
+      <ConfirmationDialog
+        open={confirmDialog?.isOpen ?? false}
+        onOpenChange={(open) => !open && setConfirmDialog(null)}
+        title={confirmDialog?.title ?? ''}
+        description={confirmDialog?.description ?? ''}
+        confirmText="Remove Member"
+        variant="destructive"
+        onConfirm={executeRemoveMember}
+        loading={false}
+      />
     </div>
   );
 };
