@@ -3,7 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Clock, Users, MapPin } from "lucide-react";
+import { Clock, Users, MapPin, Loader2 } from "lucide-react";
 import { useState } from "react";
 
 interface MissionApplicationCardProps {
@@ -134,9 +134,11 @@ export const MissionApplicationCard = ({
           <DialogTrigger asChild>
             <Button 
               size="sm"
+              disabled={isApplying}
               className="bg-primary text-primary-foreground hover:bg-primary/90"
             >
-              Apply Now
+              {isApplying && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {isApplying ? "Applying..." : "Apply Now"}
             </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-md">
@@ -172,6 +174,7 @@ export const MissionApplicationCard = ({
                   onClick={handleApply}
                   disabled={isApplying || !applicationMessage.trim()}
                 >
+                  {isApplying && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   {isApplying ? "Submitting..." : "Submit Application"}
                 </Button>
               </div>

@@ -141,6 +141,65 @@ const TeamManagement = () => {
     return `${firstName?.[0] || ''}${lastName?.[0] || ''}`.toUpperCase();
   };
 
+  const handleChangeRole = async (memberId: string, newRole: string) => {
+    if (!organization) return;
+    
+    try {
+      const { error } = await supabase.rpc('update_team_member_role', {
+        p_org_id: organization.id,
+        p_member_id: memberId,
+        p_new_role: newRole
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Role Updated",
+        description: `Team member role has been updated to ${newRole}.`,
+      });
+      
+      // Refresh the team members list
+      fetchTeamMembers();
+    } catch (error: any) {
+      toast({
+        title: "Failed to update role",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleRemoveMember = async (memberId: string) => {
+    if (!organization) return;
+    
+    if (!confirm('Are you sure you want to remove this team member? This action cannot be undone.')) {
+      return;
+    }
+    
+    try {
+      const { error } = await supabase.rpc('remove_team_member', {
+        p_org_id: organization.id,
+        p_member_id: memberId
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Member Removed",
+        description: "Team member has been successfully removed from the organization.",
+      });
+      
+      // Refresh the team members list
+      fetchTeamMembers();
+    } catch (error: any) {
+      toast({
+        title: "Failed to remove member",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
   const currentUserRole = teamMembers.find(m => m.user_id === user?.id)?.role;
 
   return (
@@ -274,10 +333,19 @@ const TeamManagement = () => {
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent>
-                                <DropdownMenuItem>Change Role</DropdownMenuItem>
-                                <DropdownMenuItem className="text-destructive">
-                                  Remove Member
-                                </DropdownMenuItem>
+                                 <DropdownMenuItem 
+                                   onClick={() => handleChangeRole(member.id, member.role === 'owner' ? 'member' : 'owner')}
+                                   disabled={form.formState.isSubmitting}
+                                 >
+                                   {member.role === 'owner' ? 'Change to Member' : 'Change to Owner'}
+                                 </DropdownMenuItem>
+                                 <DropdownMenuItem 
+                                   className="text-destructive"
+                                   onClick={() => handleRemoveMember(member.id)}
+                                   disabled={form.formState.isSubmitting}
+                                 >
+                                   Remove Member
+                                 </DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>
                          )}
