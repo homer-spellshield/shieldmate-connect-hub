@@ -646,6 +646,19 @@ export type Database = {
           organization_id: string
         }[]
       }
+      handle_team_invitation: {
+        Args: {
+          p_email: string
+          p_inviter_user_id: string
+          p_organization_id: string
+          p_role: string
+        }
+        Returns: {
+          message: string
+          outcome: string
+          user_id: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

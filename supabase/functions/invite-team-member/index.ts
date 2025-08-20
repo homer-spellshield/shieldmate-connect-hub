@@ -169,64 +169,42 @@ serve(async (req: Request) => {
       );
     }
 
-    // Check if user exists by querying auth.users (service role can read this)
-    const { data: existingUserData, error: userLookupError } = await supabaseAdmin
-      .from('auth.users')
-      .select('id, email')
-      .eq('email', sanitizedEmail)
-      .maybeSingle();
+    // Use RPC to safely handle existing user lookup and membership
+    const { data: inviteResult, error: rpcError } = await supabaseAdmin
+      .rpc('handle_team_invitation', {
+        p_email: sanitizedEmail,
+        p_role: sanitizedRole,
+        p_organization_id: organizationId,
+        p_inviter_user_id: user.id
+      });
 
-    if (existingUserData) {
-      // Check if they're already a member of this organization
-      const { data: existingMember } = await supabaseAdmin
-        .from('organization_members')
-        .select('id')
-        .eq('organization_id', organizationId)
-        .eq('user_id', existingUserData.id)
-        .single();
-
-      if (existingMember) {
-        return new Response(
-          JSON.stringify({ error: "User is already a member of this organization" }),
-          {
-            status: 409,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          }
-        );
-      }
-
-      // Add existing user to the organization
-      const { error: insertError } = await supabaseAdmin
-        .from('organization_members')
-        .insert({
-          organization_id: organizationId,
-          user_id: existingUserData.id,
-          role: sanitizedRole
-        });
-
-      if (insertError) {
-        console.error('Error adding existing user to organization:', insertError);
-        return new Response(
-          JSON.stringify({ error: "Failed to add user to organization" }),
-          {
-            status: 500,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          }
-        );
-      }
-
-      console.log(`Existing user ${sanitizedEmail} successfully added to organization`);
+    if (rpcError) {
+      console.error('RPC handle_team_invitation error:', rpcError);
       return new Response(
-        JSON.stringify({ 
-          success: true, 
-          message: "Existing user added to organization successfully" 
-        }),
-        {
-          status: 200,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
+        JSON.stringify({ error: 'Failed to process invitation', details: rpcError.message }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    // inviteResult may be an array of rows returned by the function
+    const resultRow = Array.isArray(inviteResult) ? inviteResult[0] : inviteResult;
+
+    if (resultRow?.outcome === 'already_member') {
+      return new Response(
+        JSON.stringify({ error: 'User is already a member of this organization' }),
+        { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (resultRow?.outcome === 'added_existing_user') {
+      console.log(`Existing user ${sanitizedEmail} successfully added to organization`);
+      return new Response(
+        JSON.stringify({ success: true, message: 'Existing user added to organization successfully' }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // If outcome is 'send_invite', proceed to send invite email
 
     // User doesn't exist, send invitation
     const { data: orgData } = await supabaseAdmin
