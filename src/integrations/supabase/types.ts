@@ -661,12 +661,20 @@ export type Database = {
         Args: { p_domain: string }
         Returns: boolean
       }
+      remove_team_member: {
+        Args: { p_member_id: string; p_org_id: string }
+        Returns: undefined
+      }
       set_volunteer_skills_atomic: {
         Args: {
           p_admin_id: string
           p_skill_ids: string[]
           p_volunteer_id: string
         }
+        Returns: undefined
+      }
+      update_team_member_role: {
+        Args: { p_member_id: string; p_new_role: string; p_org_id: string }
         Returns: undefined
       }
     }
