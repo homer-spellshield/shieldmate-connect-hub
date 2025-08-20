@@ -32,6 +32,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { AppErrorHandler } from '@/lib/errorHandler';
+import { InputSanitizer } from '@/lib/sanitizer';
 
 
 // Schema for the invitation form
@@ -120,29 +121,37 @@ const TeamManagement = () => {
 
   const handleInviteMember = async (values: InviteForm) => {
     if (!organization) return;
-  
-    const { error } = await supabase.functions.invoke('invite-team-member', {
-      body: {
-        orgId: organization.id,
-        orgName: organization.name,
-        inviteeEmail: values.email,
-        inviteeRole: values.role,
-      },
-    });
-  
-    if (error) {
-      toast({
-        title: "Failed to send invitation",
-        description: error.message,
-        variant: "destructive",
+
+    // Sanitize email input before sending
+    const sanitizedData = {
+      email: InputSanitizer.sanitizeEmail(values.email),
+      role: values.role,
+      organizationId: organization.id,
+    };
+
+    try {
+      const { data: response, error } = await supabase.functions.invoke('invite-team-member', {
+        body: sanitizedData,
       });
-    } else {
+
+      if (error) throw error;
+
+      // Handle specific error cases from the function
+      if (response?.error) {
+        throw new Error(response.error);
+      }
+
       toast({
-        title: "Invitation Sent!",
-        description: `${values.email} has been invited to join your organization.`,
+        title: "Success",
+        description: response?.message || "Team member invitation sent successfully!",
       });
+
       setIsInviteDialogOpen(false);
       form.reset();
+      fetchTeamMembers();
+    } catch (error: any) {
+      // Show specific error message from server if available
+      AppErrorHandler.showToast(error, 'sending invitation');
     }
   };
 

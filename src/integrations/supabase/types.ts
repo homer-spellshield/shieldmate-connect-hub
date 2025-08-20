@@ -589,6 +589,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      enforce_mission_closure_sql: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       get_all_volunteers_with_details: {
         Args: Record<PropertyKey, never>
         Returns: {

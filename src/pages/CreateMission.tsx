@@ -13,6 +13,8 @@ import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
+import { InputSanitizer } from '@/lib/sanitizer';
+import { AppErrorHandler } from '@/lib/errorHandler';
 import { ArrowLeft, MapPin, Clock, BarChart3, Loader2 } from 'lucide-react';
 
 const missionSchema = z.object({
@@ -132,12 +134,15 @@ const CreateMission = () => {
       return;
     }
 
-    try {
+    // Sanitize form data before submission
+    const sanitizedValues = InputSanitizer.sanitizeFormData(values);
+
+    return AppErrorHandler.handleAsync(async () => {
       const { error } = await supabase.from('missions').insert({
-        title: values.title,
-        description: values.description,
+        title: sanitizedValues.title,
+        description: sanitizedValues.description,
         organization_id: userOrganization.id,
-        template_id: values.template_id,
+        template_id: sanitizedValues.template_id,
         estimated_hours: selectedTemplate?.estimated_hours,
         difficulty_level: selectedTemplate?.difficulty_level,
         status: 'open',
@@ -151,13 +156,7 @@ const CreateMission = () => {
       });
 
       navigate('/org-dashboard');
-    } catch (error: any) {
-      toast({
-        title: 'Error',
-        description: 'Failed to post mission. Please try again.',
-        variant: 'destructive',
-      });
-    }
+    }, 'Creating mission');
   };
 
   if (loading) {

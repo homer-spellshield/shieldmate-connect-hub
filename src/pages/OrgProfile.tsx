@@ -11,6 +11,8 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useToast } from '@/hooks/use-toast';
+import { InputSanitizer } from '@/lib/sanitizer';
+import { AppErrorHandler } from '@/lib/errorHandler';
 import { Building, Globe, Mail, Users } from 'lucide-react';
 
 const orgProfileSchema = z.object({
@@ -122,14 +124,17 @@ const OrgProfile = () => {
   const onSubmit = async (data: OrgProfileForm) => {
     if (!organization) return;
 
-    try {
+    // Sanitize form data before submission
+    const sanitizedData = InputSanitizer.sanitizeFormData(data);
+
+    return AppErrorHandler.handleAsync(async () => {
       const { error } = await supabase
         .from('organizations')
         .update({
-          name: data.name,
-          description: data.description || null,
-          website_url: data.website_url || null,
-          contact_email: data.contact_email || null,
+          name: sanitizedData.name,
+          description: sanitizedData.description || null,
+          website_url: sanitizedData.website_url || null,
+          contact_email: sanitizedData.contact_email || null,
         })
         .eq('id', organization.id);
 
@@ -141,14 +146,7 @@ const OrgProfile = () => {
       });
 
       fetchOrganization();
-    } catch (error) {
-      console.error('Error updating organization:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update organization profile",
-        variant: "destructive",
-      });
-    }
+    }, 'Updating organization profile');
   };
 
   if (loading) {
