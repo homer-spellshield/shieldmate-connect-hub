@@ -88,9 +88,10 @@ const VolunteerDashboard = () => {
         
         const { data: activeMissionsData, error: activeMissionsError } = await supabase
           .from('mission_applications')
-          .select(`missions (*, organizations(name))`)
+          .select(`missions!inner (*, organizations(name))`)
           .eq('volunteer_id', user.id)
-          .eq('status', 'accepted');
+          .eq('status', 'accepted')
+          .neq('missions.status', 'completed');
           
         if (activeMissionsError) throw activeMissionsError;
         setActiveMissions(activeMissionsData as any || []);
