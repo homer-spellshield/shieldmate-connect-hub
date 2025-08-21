@@ -589,6 +589,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_delete_missions: {
+        Args: { p_mission_ids: string[] }
+        Returns: undefined
+      }
       enforce_mission_closure_sql: {
         Args: Record<PropertyKey, never>
         Returns: undefined
