@@ -3,9 +3,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { VolunteerManagement } from '@/components/admin/VolunteerManagement';
 import { SkillManagement } from '@/components/admin/SkillManagement';
 import { MissionTemplateManagement } from '@/components/admin/MissionTemplateManagement';
+import { MissionManagement } from '@/components/admin/MissionManagement';
 import { SystemOverview } from '@/components/admin/SystemOverview';
-import { OrganisationVerification } from '@/components/admin/OrganisationVerification'; // Import the new component
-import { Users, Award, BarChart3, Briefcase, CheckSquare } from 'lucide-react';
+import { OrganisationVerification } from '@/components/admin/OrganisationVerification';
+import { Users, Award, BarChart3, Briefcase, CheckSquare, Target } from 'lucide-react';
 
 const AdminDashboard = () => {
   return (
@@ -18,7 +19,7 @@ const AdminDashboard = () => {
       </div>
 
       <Tabs defaultValue="overview" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-5"> {/* This line should be grid-cols-5 */}
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="overview" className="flex items-center gap-2">
             <BarChart3 className="h-4 w-4" />
             Overview
@@ -31,6 +32,10 @@ const AdminDashboard = () => {
           <TabsTrigger value="volunteers" className="flex items-center gap-2">
             <Users className="h-4 w-4" />
             Volunteers
+          </TabsTrigger>
+          <TabsTrigger value="missions" className="flex items-center gap-2">
+            <Target className="h-4 w-4" />
+            Missions
           </TabsTrigger>
           <TabsTrigger value="skills" className="flex items-center gap-2">
             <Award className="h-4 w-4" />
@@ -53,6 +58,10 @@ const AdminDashboard = () => {
 
         <TabsContent value="volunteers">
           <VolunteerManagement />
+        </TabsContent>
+
+        <TabsContent value="missions">
+          <MissionManagement />
         </TabsContent>
 
         <TabsContent value="skills">
