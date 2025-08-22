@@ -9,6 +9,8 @@ import { AuthProvider } from "@/hooks/useAuth";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
 import MissionDiscovery from "./pages/MissionDiscovery";
+import MissionDetail from "./pages/MissionDetail";
+import MyMissions from "./pages/MyMissions";
 import OrganisationDashboard from "./pages/OrganisationDashboard";
 import CreateMission from "./pages/CreateMission";
 import VolunteerProfile from "./pages/VolunteerProfile";
@@ -56,6 +58,16 @@ function App() {
                     <Route path="/missions" element={
                       <ProtectedRoute>
                         <MissionDiscovery />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/mission-detail/:id" element={
+                      <ProtectedRoute>
+                        <MissionDetail />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/my-missions" element={
+                      <ProtectedRoute requiredRoles={['volunteer']}>
+                        <MyMissions />
                       </ProtectedRoute>
                     } />
                     <Route path="/applications" element={

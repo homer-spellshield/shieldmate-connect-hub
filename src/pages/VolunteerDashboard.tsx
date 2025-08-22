@@ -204,7 +204,7 @@ const VolunteerDashboard = () => {
                                       <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{mission.description}</p>
                                       <div className="flex items-center justify-between">
                                           <span className="text-sm text-muted-foreground">{mission.organizations?.name || 'Organization'}</span>
-                                          <Button size="sm" variant="outline" onClick={() => navigate('/missions')}>Learn More</Button>
+                                          <Button size="sm" variant="outline" onClick={() => navigate(`/mission-detail/${mission.id}`)}>Learn More</Button>
                                       </div>
                                   </div>
                               ))}

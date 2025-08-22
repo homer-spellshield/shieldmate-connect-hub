@@ -168,7 +168,7 @@ const MissionDiscovery = () => {
   });
 
   const handleViewDetails = (id: string) => {
-    console.log("View mission details:", id);
+    window.location.href = `/mission-detail/${id}`;
   };
 
   const handleApplyToMission = async (missionId: string, applicationMessage: string) => {

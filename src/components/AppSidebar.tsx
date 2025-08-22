@@ -30,6 +30,7 @@ import { useAuth } from "@/hooks/useAuth";
 const volunteerNavItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
   { title: "Discover Missions", url: "/missions", icon: Briefcase },
+  { title: "My Missions", url: "/my-missions", icon: Award },
   { title: "My Applications", url: "/applications", icon: FileText },
   { title: "My Profile", url: "/profile", icon: User },
 ];
