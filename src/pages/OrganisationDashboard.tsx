@@ -46,11 +46,8 @@ const OrganisationDashboard = () => {
           .single();
 
         if (orgMemberError || !orgMember?.organizations) {
-          toast({
-            title: "No Organisation",
-            description: "You are not associated with any organisation.",
-            variant: "destructive"
-          });
+          setOrganization(null);
+          setMissions([]);
           setLoading(false);
           return;
         }

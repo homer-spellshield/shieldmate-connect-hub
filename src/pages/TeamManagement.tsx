@@ -104,11 +104,18 @@ const TeamManagement = () => {
       setTeamMembers(membersData as TeamMember[]);
   
     } catch (error: any) {
-      toast({
-        title: "Error fetching team members",
-        description: error.message,
-        variant: "destructive",
-      });
+      console.error('Error fetching team members:', error);
+      if (error?.message?.includes('Organization not found')) {
+        // User is not part of any organization
+        setTeamMembers([]);
+        setOrganization(null);
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to fetch team members. Please try again.",
+          variant: "destructive",
+        });
+      }
     } finally {
       setLoading(false);
     }

@@ -608,6 +608,13 @@ export type Database = {
           last_name: string
         }[]
       }
+      get_mission_organization_info: {
+        Args: { p_mission_id: string }
+        Returns: {
+          organization_id: string
+          organization_name: string
+        }[]
+      }
       get_open_missions_public: {
         Args: { p_limit?: number }
         Returns: {

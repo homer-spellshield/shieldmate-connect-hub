@@ -63,7 +63,13 @@ const MyMissions = () => {
         if (missionsError) throw missionsError;
         setMissions(missionsData as unknown as Mission[]);
       } catch (error: any) {
-        toast({ title: "Error", description: "Failed to load your missions.", variant: "destructive" });
+        console.error('Failed to fetch missions:', error);
+        if (error?.message?.includes('No organization found')) {
+          // User is not part of any organization
+          setMissions([]);
+        } else {
+          toast({ title: "Error", description: "Failed to load your missions.", variant: "destructive" });
+        }
       } finally {
         setLoading(false);
       }
