@@ -623,10 +623,32 @@ export type Database = {
           title: string
         }[]
       }
+      get_own_profile: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          availability: Database["public"]["Enums"]["availability_type"] | null
+          avatar_url: string | null
+          bio: string | null
+          created_at: string
+          email: string | null
+          experience_level:
+            | Database["public"]["Enums"]["experience_level"]
+            | null
+          first_name: string | null
+          id: string
+          join_date: string | null
+          last_name: string | null
+          level: number | null
+          status: Database["public"]["Enums"]["volunteer_status"] | null
+          time_zone: string | null
+          updated_at: string
+          user_id: string
+          xp_points: number | null
+        }[]
+      }
       get_profile_for_mission: {
         Args: { p_mission_id: string; p_user_id: string }
         Returns: {
-          email: string
           first_name: string
           last_name: string
           user_id: string
