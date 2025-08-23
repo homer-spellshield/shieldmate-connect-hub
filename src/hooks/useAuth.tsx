@@ -53,9 +53,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const fetchProfileAndRoles = useCallback(async (user: User) => {
     try {
       const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('user_id', user.id)
+        .rpc('get_own_profile' as any)
         .single();
       
       if (profileError) throw profileError;

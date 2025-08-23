@@ -22,7 +22,6 @@ import { cn } from "@/lib/utils";
 type ProfileInfo = {
   first_name: string | null;
   last_name: string | null;
-  email?: string | null;
   user_id: string;
 } | null;
 
@@ -42,7 +41,7 @@ type MissionDetails = Database['public']['Tables']['missions']['Row'] & {
   organizations: Pick<Database['public']['Tables']['organizations']['Row'], 'id' | 'name'> | null;
   mission_applications: {
     status: string;
-    profiles: (Pick<Database['public']['Tables']['profiles']['Row'], 'user_id' | 'first_name' | 'last_name'> & { email?: string | null }) | null;
+    profiles: (Pick<Database['public']['Tables']['profiles']['Row'], 'user_id' | 'first_name' | 'last_name'>) | null;
   }[];
   mission_templates: {
     mission_template_skills: {
@@ -97,21 +96,21 @@ const MissionControl = () => {
 
     const getDisplayName = (p: ProfileInfo) => {
         const name = `${p?.first_name || ''} ${p?.last_name || ''}`.trim();
-        return name || p?.email || 'A user';
+        return name || 'A user';
     };
 
     const fetchAllData = async () => {
         if (!missionId || !user) return;
         setLoading(true);
         try {
-            const { data: missionData, error: missionError } = await supabase.from('missions').select(`*, organizations ( id, name ), mission_applications ( status, profiles ( user_id, first_name, last_name, email ) ), mission_templates ( mission_template_skills ( skills ( name ) ) )`).eq('id', missionId).single();
+            const { data: missionData, error: missionError } = await supabase.from('missions').select(`*, organizations ( id, name ), mission_applications ( status, profiles ( user_id, first_name, last_name ) ), mission_templates ( mission_template_skills ( skills ( name ) ) )`).eq('id', missionId).single();
             if (missionError) throw missionError;
             setMission(missionData as any);
 
             const [messagesRes, filesRes, ratingsRes] = await Promise.all([
-                supabase.from('mission_messages').select('*, profiles ( user_id, first_name, last_name, email )').eq('mission_id', missionId).order('created_at'),
-                supabase.from('mission_files').select('*, profiles ( user_id, first_name, last_name, email )').eq('mission_id', missionId).order('created_at', { ascending: false }),
-                supabase.from('mission_ratings').select('*, profiles!mission_ratings_rater_user_id_fkey ( user_id, first_name, last_name, email )').eq('mission_id', missionId)
+                supabase.from('mission_messages').select('*, profiles ( user_id, first_name, last_name )').eq('mission_id', missionId).order('created_at'),
+                supabase.from('mission_files').select('*, profiles ( user_id, first_name, last_name )').eq('mission_id', missionId).order('created_at', { ascending: false }),
+                supabase.from('mission_ratings').select('*, profiles!mission_ratings_rater_user_id_fkey ( user_id, first_name, last_name )').eq('mission_id', missionId)
             ]);
             if (messagesRes.error) throw messagesRes.error;
             setMessages(messagesRes.data as any || []);
@@ -162,7 +161,7 @@ const MissionControl = () => {
           created_at: new Date().toISOString(),
           user_id: user.id,
           mission_id: missionId,
-          profiles: { user_id: user.id, first_name: profile?.first_name || '', last_name: profile?.last_name || '', email: user.email },
+          profiles: { user_id: user.id, first_name: profile?.first_name || '', last_name: profile?.last_name || '' },
         };
         setMessages(currentMessages => [...currentMessages, optimisticMessage]);
         const { error } = await supabase.from('mission_messages').insert({ mission_id: missionId, user_id: user.id, content: content });
