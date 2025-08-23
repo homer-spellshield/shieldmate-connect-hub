@@ -53,11 +53,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const fetchProfileAndRoles = useCallback(async (user: User) => {
     try {
       const { data: profileData, error: profileError } = await supabase
-        .rpc('get_own_profile' as any)
-        .single();
+        .rpc('get_own_profile' as any);
       
       if (profileError) throw profileError;
-      setProfile(profileData as Profile);
+      
+      // get_own_profile returns an array, take the first element
+      const profile = profileData?.[0];
+      if (!profile) {
+        throw new Error('Profile not found');
+      }
+      setProfile(profile as Profile);
 
       const { data: rolesData, error: rolesError } = await supabase
         .from('user_roles')
