@@ -13,16 +13,12 @@ interface Application {
   status: string;
   applied_at: string;
   application_message: string;
-  missions: {
-    id: string;
-    title: string;
-    description: string;
-    difficulty_level: string;
-    estimated_hours: number;
-    organizations: {
-      name: string;
-    };
-  };
+  mission_id: string;
+  mission_title: string;
+  mission_description: string;
+  difficulty_level: string;
+  estimated_hours: number;
+  organization_name: string;
 }
 
 const Applications = () => {
@@ -43,27 +39,9 @@ const Applications = () => {
     }
 
     try {
-      // Fetch applications with joined mission and organization data in a single query
+      // Use the secure function to fetch applications with mission details
       const { data: applicationData, error: appError } = await supabase
-        .from('mission_applications')
-        .select(`
-          id, 
-          status, 
-          applied_at, 
-          application_message,
-          missions:mission_id (
-            id,
-            title,
-            description,
-            difficulty_level,
-            estimated_hours,
-            organizations:organization_id (
-              name
-            )
-          )
-        `)
-        .eq('volunteer_id', user.id)
-        .order('applied_at', { ascending: false });
+        .rpc('get_volunteer_applications_with_details', { p_volunteer_id: user.id });
 
       if (appError) {
         console.error('Error fetching applications:', appError);
@@ -75,20 +53,7 @@ const Applications = () => {
         return;
       }
 
-      // Format the data to match the expected structure
-      const formattedApplications = applicationData.map(app => ({
-        ...app,
-        missions: app.missions || {
-          id: '',
-          title: 'Unknown Mission',
-          description: '',
-          difficulty_level: null,
-          estimated_hours: null,
-          organizations: { name: 'Unknown Organization' }
-        }
-      }));
-
-      setApplications(formattedApplications as Application[]);
+      setApplications(applicationData as Application[]);
     } catch (error: any) {
       console.error('Error fetching applications:', error);
       toast({
@@ -147,10 +112,10 @@ const Applications = () => {
                 <div className="flex justify-between items-start">
                   <div>
                     <CardTitle className="text-xl mb-2">
-                      {application.missions.title}
+                      {application.mission_title}
                     </CardTitle>
                     <CardDescription className="text-sm text-muted-foreground">
-                      {application.missions.organizations.name}
+                      {application.organization_name}
                     </CardDescription>
                   </div>
                   <Badge variant={getStatusBadgeVariant(application.status)}>
@@ -160,17 +125,17 @@ const Applications = () => {
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground mb-4">
-                  {application.missions.description}
+                  {application.mission_description}
                 </p>
                 
                 <div className="flex items-center gap-4 text-sm text-muted-foreground mb-4">
                   <div className="flex items-center gap-1">
                     <Clock className="h-4 w-4" />
-                    {application.missions.estimated_hours} hours
+                    {application.estimated_hours} hours
                   </div>
                   <div className="flex items-center gap-1">
                     <MapPin className="h-4 w-4" />
-                    {application.missions.difficulty_level || 'Not specified'}
+                    {application.difficulty_level || 'Not specified'}
                   </div>
                   <div className="flex items-center gap-1">
                     <Calendar className="h-4 w-4" />
@@ -189,7 +154,7 @@ const Applications = () => {
 
                 {application.status === 'accepted' && (
                   <div className="mt-4">
-                    <Button onClick={() => navigate(`/mission/${application.missions.id}`)}>
+                    <Button onClick={() => navigate(`/mission/${application.mission_id}`)}>
                       Access Mission Workspace
                     </Button>
                   </div>

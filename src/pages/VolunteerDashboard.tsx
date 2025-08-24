@@ -18,13 +18,9 @@ interface Mission {
   description: string;
   estimated_hours: number | null;
   difficulty_level: string | null;
-  organizations: {
-    name: string;
-  } | null;
-}
-
-interface ActiveMission {
-  missions: Mission;
+  organization_name?: string;
+  organization_id?: string;
+  status?: string;
 }
 
 interface Profile {
@@ -44,7 +40,7 @@ const VolunteerDashboard = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [availableMissions, setAvailableMissions] = useState<Mission[]>([]);
-  const [activeMissions, setActiveMissions] = useState<ActiveMission[]>([]);
+  const [activeMissions, setActiveMissions] = useState<Mission[]>([]);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -90,10 +86,9 @@ const VolunteerDashboard = () => {
           
         if (activeMissionsError) throw activeMissionsError;
         
-        // Filter out completed missions and format the data
+        // Filter out completed missions
         const formattedActiveMissions = (activeMissionsData || [])
-          .filter((m: any) => m.status !== 'completed')
-          .map((m: any) => ({ missions: m }));
+          .filter((m: any) => m.status !== 'completed');
         
         setActiveMissions(formattedActiveMissions);
 
@@ -173,11 +168,11 @@ const VolunteerDashboard = () => {
                       <CardTitle className="flex items-center gap-2"><Rocket className="text-primary"/>Your Active Mission</CardTitle>
                   </CardHeader>
                   <CardContent>
-                      {activeMissions.map(app => (
-                          <div key={app.missions.id}>
-                              <h3 className="font-semibold">{app.missions.title}</h3>
-                              <p className="text-sm text-muted-foreground mb-4">Organization: {app.missions.organizations?.name}</p>
-                              <Button onClick={() => navigate(`/mission/${app.missions.id}`)}>Go to Mission Workspace</Button>
+                      {activeMissions.map(mission => (
+                          <div key={mission.id}>
+                              <h3 className="font-semibold">{mission.title}</h3>
+                              <p className="text-sm text-muted-foreground mb-4">Organization: {mission.organization_name}</p>
+                              <Button onClick={() => navigate(`/mission/${mission.id}`)}>Go to Mission Workspace</Button>
                           </div>
                       ))}
                   </CardContent>
@@ -204,7 +199,7 @@ const VolunteerDashboard = () => {
                                       <h4 className="font-medium mb-2">{mission.title}</h4>
                                       <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{mission.description}</p>
                                       <div className="flex items-center justify-between">
-                                          <span className="text-sm text-muted-foreground">{mission.organizations?.name || 'Organization'}</span>
+                                          <span className="text-sm text-muted-foreground">{mission.organization_name || 'Organization'}</span>
                                           <Button size="sm" variant="outline" onClick={() => navigate(`/mission-detail/${mission.id}`)}>Learn More</Button>
                                       </div>
                                   </div>

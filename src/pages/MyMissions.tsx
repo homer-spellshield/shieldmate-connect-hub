@@ -17,7 +17,7 @@ type Mission = {
   status: string;
   estimated_hours: number | null;
   difficulty_level: string | null;
-  mission_applications: { count: number }[];
+  application_count: number;
 };
 
 const MyMissions = () => {
@@ -44,24 +44,12 @@ const MyMissions = () => {
         }
         const orgId = orgMemberData[0].organization_id;
 
-        // Fetch missions for that organization and count applications
+        // Use the secure function to fetch missions with application counts
         const { data: missionsData, error: missionsError } = await supabase
-          .from('missions')
-          .select(`
-            id,
-            title,
-            description,
-            created_at,
-            status,
-            estimated_hours,
-            difficulty_level,
-            mission_applications ( count )
-          `)
-          .eq('organization_id', orgId)
-          .order('created_at', { ascending: false });
+          .rpc('get_organization_missions_with_applications', { p_org_id: orgId });
 
         if (missionsError) throw missionsError;
-        setMissions(missionsData as unknown as Mission[]);
+        setMissions(missionsData as Mission[]);
       } catch (error: any) {
         console.error('Failed to fetch missions:', error);
         if (error?.message?.includes('No organization found')) {
@@ -128,12 +116,12 @@ const MyMissions = () => {
                 <div className="flex items-center space-x-4 text-sm text-muted-foreground mb-4">
                   {mission.estimated_hours && <div className="flex items-center gap-1"><Clock className="w-4 h-4" /><span>{mission.estimated_hours} hours</span></div>}
                   {mission.difficulty_level && <div className="flex items-center gap-1"><span className="capitalize">{mission.difficulty_level}</span></div>}
-                  <div className="flex items-center gap-1"><Users className="w-4 h-4" /><span>{mission.mission_applications[0].count} applications</span></div>
+                  <div className="flex items-center gap-1"><Users className="w-4 h-4" /><span>{mission.application_count} applications</span></div>
                 </div>
                 <div className="flex justify-end space-x-2">
                     <Button variant="outline">View Details</Button>
                     <Button onClick={() => navigate(`/org-missions/${mission.id}/applications`)}>
-                        Review Applications ({mission.mission_applications[0].count})
+                        Review Applications ({mission.application_count})
                     </Button>
                 </div>
               </CardContent>

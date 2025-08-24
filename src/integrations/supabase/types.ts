@@ -618,6 +618,7 @@ export type Database = {
       get_open_missions_public: {
         Args: { p_limit?: number }
         Returns: {
+          created_at: string
           description: string
           difficulty_level: string
           estimated_hours: number
@@ -627,6 +628,19 @@ export type Database = {
           status: string
           template_id: string
           template_title: string
+          title: string
+        }[]
+      }
+      get_organization_missions_with_applications: {
+        Args: { p_org_id: string }
+        Returns: {
+          application_count: number
+          created_at: string
+          description: string
+          difficulty_level: string
+          estimated_hours: number
+          id: string
+          status: string
           title: string
         }[]
       }
@@ -679,6 +693,22 @@ export type Database = {
           organization_id: string
         }[]
       }
+      get_volunteer_applications_with_details: {
+        Args: { p_volunteer_id: string }
+        Returns: {
+          application_message: string
+          applied_at: string
+          difficulty_level: string
+          estimated_hours: number
+          id: string
+          mission_description: string
+          mission_id: string
+          mission_title: string
+          organization_id: string
+          organization_name: string
+          status: string
+        }[]
+      }
       get_volunteer_missions: {
         Args: Record<PropertyKey, never>
         Returns: {
@@ -687,6 +717,7 @@ export type Database = {
           estimated_hours: number
           id: string
           organization_id: string
+          organization_name: string
           status: string
           title: string
         }[]
@@ -715,8 +746,16 @@ export type Database = {
         Args: { _mission_id: string; _user_id: string }
         Returns: boolean
       }
+      is_organization_member: {
+        Args: { p_org_id: string; p_user_id: string }
+        Returns: boolean
+      }
       is_organization_owner: {
         Args: { org_id: string }
+        Returns: boolean
+      }
+      is_volunteer_for_mission: {
+        Args: { p_mission_id: string; p_user_id: string }
         Returns: boolean
       }
       organization_domain_exists: {
