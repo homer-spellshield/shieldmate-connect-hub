@@ -90,9 +90,14 @@ const VolunteerProfile = () => {
                     <div className="flex items-center space-x-1"><Calendar className="w-4 h-4" /><span>Joined {new Date((profile as any).join_date || Date.now()).toLocaleDateString()}</span></div>
                   </div>
                   
-                  <div className="flex items-center space-x-4">
-                    <a href={`mailto:${user?.email}`} className="flex items-center space-x-1 text-primary hover:underline"><Mail className="w-4 h-4" /><span>Email</span></a>
-                  </div>
+                  {user?.email && (
+                    <div className="flex items-center space-x-4">
+                      <div className="flex items-center space-x-1 text-muted-foreground">
+                        <Mail className="w-4 h-4" />
+                        <span>{user.email}</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </CardContent>

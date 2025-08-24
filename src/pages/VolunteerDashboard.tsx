@@ -77,24 +77,25 @@ const VolunteerDashboard = () => {
         
         setHasSkills(skillsData && skillsData.length > 0);
 
+        // Fetch available missions using the public function
         const { data: missionsData, error: missionsError } = await supabase
-          .from('missions')
-          .select(`id, title, description, estimated_hours, difficulty_level, organizations (name)`)
-          .eq('status', 'open')
-          .limit(3);
+          .rpc('get_open_missions_public', { p_limit: 3 });
 
         if (missionsError) throw missionsError;
         setAvailableMissions(missionsData as any || []);
         
+        // Fetch active missions using the secure function  
         const { data: activeMissionsData, error: activeMissionsError } = await supabase
-          .from('mission_applications')
-          .select(`missions!inner (*, organizations(name))`)
-          .eq('volunteer_id', user.id)
-          .eq('status', 'accepted')
-          .neq('missions.status', 'completed');
+          .rpc('get_volunteer_missions');
           
         if (activeMissionsError) throw activeMissionsError;
-        setActiveMissions(activeMissionsData as any || []);
+        
+        // Filter out completed missions and format the data
+        const formattedActiveMissions = (activeMissionsData || [])
+          .filter((m: any) => m.status !== 'completed')
+          .map((m: any) => ({ missions: m }));
+        
+        setActiveMissions(formattedActiveMissions);
 
       } catch (error: any) {
         setError(error.message);

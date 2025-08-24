@@ -30,7 +30,7 @@ type ProfileForm = z.infer<typeof profileSchema>;
 type PasswordForm = z.infer<typeof passwordSchema>;
 
 const Settings = () => {
-  const { profile, refetchProfile } = useAuth();
+  const { user, profile, refetchProfile } = useAuth();
   const { toast } = useToast();
 
   const profileForm = useForm<ProfileForm>({
@@ -52,6 +52,15 @@ const Settings = () => {
   });
 
   const onProfileSubmit = async (data: ProfileForm) => {
+    if (!user) {
+      toast({
+        title: "Error",
+        description: "You must be logged in to update your profile",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     try {
       const { error } = await supabase
         .from('profiles')
@@ -60,7 +69,7 @@ const Settings = () => {
           last_name: data.last_name,
           bio: data.bio || null,
         })
-        .eq('user_id', profile?.user_id);
+        .eq('user_id', user.id);
 
       if (error) throw error;
 

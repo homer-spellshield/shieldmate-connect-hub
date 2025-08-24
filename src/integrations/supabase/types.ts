@@ -679,6 +679,18 @@ export type Database = {
           organization_id: string
         }[]
       }
+      get_volunteer_missions: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          description: string
+          difficulty_level: string
+          estimated_hours: number
+          id: string
+          organization_id: string
+          status: string
+          title: string
+        }[]
+      }
       handle_team_invitation: {
         Args: {
           p_email: string
