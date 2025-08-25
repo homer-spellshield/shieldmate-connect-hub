@@ -778,6 +778,12 @@ export type Database = {
         Args: { p_member_id: string; p_new_role: string; p_org_id: string }
         Returns: undefined
       }
+      user_applied_mission_ids: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          mission_id: string
+        }[]
+      }
     }
     Enums: {
       app_role:
