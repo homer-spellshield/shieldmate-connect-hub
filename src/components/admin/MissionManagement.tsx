@@ -7,7 +7,6 @@ import { Trash2, RefreshCw } from "lucide-react";
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
-import { AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
 interface Mission {
   id: string;
@@ -154,17 +153,15 @@ export const MissionManagement = () => {
             <RefreshCw className="h-4 w-4 mr-2" />
             Refresh
           </Button>
-          <AlertDialogTrigger asChild>
-            <Button
-              variant="destructive"
-              size="sm"
-              disabled={missions.filter(m => m.status === 'completed').length === 0}
-              onClick={() => setDeleteAllDialogOpen(true)}
-            >
-              <Trash2 className="h-4 w-4 mr-2" />
-              Delete Completed
-            </Button>
-          </AlertDialogTrigger>
+          <Button
+            variant="destructive"
+            size="sm"
+            disabled={missions.filter(m => m.status === 'completed').length === 0}
+            onClick={() => setDeleteAllDialogOpen(true)}
+          >
+            <Trash2 className="h-4 w-4 mr-2" />
+            Delete Completed
+          </Button>
         </div>
       </CardHeader>
       <CardContent>
